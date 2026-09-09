@@ -79,6 +79,11 @@ export default function DyeingJobsPage() {
     receivedDate: new Date().toISOString().slice(0, 10),
     expectedDeliveryDate: '',
     processNotes: '',
+    vehicleNo: '',
+    lotNumber: '',
+    rollCount: '',
+    weight: '',
+    inspectionNotes: '',
   });
 
   async function loadJobs() {
@@ -108,6 +113,8 @@ export default function DyeingJobsPage() {
         body: JSON.stringify({
           ...form,
           quantityReceived: Number(form.quantityReceived),
+          rollCount: form.rollCount ? Number(form.rollCount) : undefined,
+          weight: form.weight ? Number(form.weight) : undefined,
         }),
       });
       setForm(current => ({
@@ -121,6 +128,11 @@ export default function DyeingJobsPage() {
         quantityReceived: '',
         partyDcNo: '',
         processNotes: '',
+        vehicleNo: '',
+        lotNumber: '',
+        rollCount: '',
+        weight: '',
+        inspectionNotes: '',
       }));
       await loadJobs();
     } catch {
@@ -299,6 +311,36 @@ export default function DyeingJobsPage() {
               }
             />
           </label>
+        </div>
+        <div className="border-t pt-4">
+          <h3 className="mb-2 text-sm font-semibold text-slate-700">GRN / inward receipt details (optional)</h3>
+          <div className="grid gap-3 md:grid-cols-3">
+            {[
+              ['vehicleNo', 'Vehicle number'],
+              ['lotNumber', 'Lot number'],
+              ['rollCount', 'Roll count'],
+              ['weight', 'Inspected weight'],
+            ].map(([field, placeholder]) => (
+              <input
+                key={field}
+                className="border p-2 rounded"
+                type={field === 'rollCount' || field === 'weight' ? 'number' : 'text'}
+                step={field === 'weight' ? '0.001' : field === 'rollCount' ? '1' : undefined}
+                min="0"
+                placeholder={placeholder}
+                value={form[field as keyof typeof form]}
+                onChange={event =>
+                  updateForm(field as keyof typeof form, event.target.value)
+                }
+              />
+            ))}
+          </div>
+          <textarea
+            className="mt-3 border p-2 rounded w-full"
+            placeholder="Inspection notes"
+            value={form.inspectionNotes}
+            onChange={event => updateForm('inspectionNotes', event.target.value)}
+          />
         </div>
         <textarea
           className="border p-2 rounded w-full"

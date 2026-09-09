@@ -32,6 +32,8 @@ export default function Navbar() {
       <div className="flex flex-wrap gap-2 text-sm font-medium text-slate-600">
         <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/dashboard">Dashboard</Link>
         <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/dyeing-jobs">Jobs</Link>
+        <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/production-board">Production Board</Link>
+        <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/machines">Machines</Link>
         <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/products">Services</Link>
         <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/invoices">Invoices</Link>
       </div>
