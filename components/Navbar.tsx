@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 type NavItem = { href: string; label: string };
@@ -47,11 +47,32 @@ const navGroups: NavGroup[] = [
 
 function GroupDropdown({ group, active }: { group: NavGroup; active: boolean }) {
   const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function clearCloseTimer() {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }
+
+  function scheduleClose() {
+    clearCloseTimer();
+    // Small delay so moving the mouse diagonally from the button to the
+    // dropdown panel doesn't cause it to close before the user gets there.
+    closeTimer.current = setTimeout(() => setOpen(false), 250);
+  }
+
+  useEffect(() => () => clearCloseTimer(), []);
+
   return (
     <div
       className="relative"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onMouseEnter={() => {
+        clearCloseTimer();
+        setOpen(true);
+      }}
+      onMouseLeave={scheduleClose}
     >
       <button
         type="button"
@@ -63,7 +84,12 @@ function GroupDropdown({ group, active }: { group: NavGroup; active: boolean }) 
         {group.label} <span className="text-xs text-slate-400">▾</span>
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-20 mt-1 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+        // Invisible bridge closes the gap between the button and the panel so
+        // hover doesn't drop out while crossing it.
+        <div className="absolute left-0 top-full h-2 w-52" />
+      )}
+      {open && (
+        <div className="absolute left-0 top-[calc(100%+0.5rem)] z-20 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg transition-opacity duration-150">
           {group.items.map(item => (
             <Link
               key={item.href}
