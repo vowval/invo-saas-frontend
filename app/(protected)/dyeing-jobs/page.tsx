@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, Fragment, useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 
 type JobStatus =
@@ -26,6 +26,24 @@ type DyeingJob = {
   processNotes?: string;
 };
 
+type StageStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+
+type ProcessStage = {
+  id: string;
+  stageName: string;
+  sequence: number;
+  inputQty: number | string | null;
+  outputQty: number | string | null;
+  status: StageStatus;
+  notes?: string;
+};
+
+const stageStatusLabels: Record<StageStatus, string> = {
+  PENDING: 'Pending',
+  IN_PROGRESS: 'In progress',
+  COMPLETED: 'Completed',
+};
+
 const statuses: JobStatus[] = [
   'RECEIVED',
   'IN_PROCESS',
@@ -44,6 +62,10 @@ export default function DyeingJobsPage() {
   const [jobs, setJobs] = useState<DyeingJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
+  const [stagesByJob, setStagesByJob] = useState<Record<string, ProcessStage[]>>({});
+  const [newStageName, setNewStageName] = useState('');
+  const [outputInputs, setOutputInputs] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
     jobNo: '',
     customerName: '',
@@ -123,6 +145,86 @@ export default function DyeingJobsPage() {
     } catch {
       setError('Failed to update job status');
     }
+  }
+
+  async function loadStages(jobId: string) {
+    try {
+      const stages = await apiFetch(`/dyeing-jobs/${jobId}/stages`);
+      setStagesByJob(current => ({ ...current, [jobId]: stages }));
+    } catch {
+      setError('Failed to load process stages');
+    }
+  }
+
+  async function toggleJob(jobId: string) {
+    if (expandedJobId === jobId) {
+      setExpandedJobId(null);
+      return;
+    }
+    setExpandedJobId(jobId);
+    if (!stagesByJob[jobId]) {
+      await loadStages(jobId);
+    }
+  }
+
+  async function addStage(jobId: string, event: FormEvent) {
+    event.preventDefault();
+    setError('');
+    if (!newStageName.trim()) return;
+    try {
+      await apiFetch(`/dyeing-jobs/${jobId}/stages`, {
+        method: 'POST',
+        body: JSON.stringify({ stageName: newStageName.trim() }),
+      });
+      setNewStageName('');
+      await loadStages(jobId);
+      await loadJobs();
+    } catch {
+      setError('Failed to add process stage');
+    }
+  }
+
+  async function startStage(jobId: string, stageId: string) {
+    setError('');
+    try {
+      await apiFetch(`/dyeing-jobs/${jobId}/stages/${stageId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'start' }),
+      });
+      await loadStages(jobId);
+    } catch {
+      setError('Failed to start process stage');
+    }
+  }
+
+  async function completeStage(jobId: string, stageId: string) {
+    setError('');
+    const outputQty = outputInputs[stageId];
+    if (!outputQty) {
+      setError('Enter the output quantity before completing the stage');
+      return;
+    }
+    try {
+      await apiFetch(`/dyeing-jobs/${jobId}/stages/${stageId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'complete', outputQty: Number(outputQty) }),
+      });
+      setOutputInputs(current => ({ ...current, [stageId]: '' }));
+      await loadStages(jobId);
+      await loadJobs();
+    } catch {
+      setError('Failed to complete process stage');
+    }
+  }
+
+  function wastageSummary(job: DyeingJob, stages: ProcessStage[]) {
+    const completed = stages.filter(stage => stage.status === 'COMPLETED' && stage.outputQty !== null);
+    if (!completed.length) return null;
+    const finalOutput = Number(completed[completed.length - 1].outputQty);
+    const input = Number(job.quantityReceived);
+    const wastageQty = Number((input - finalOutput).toFixed(3));
+    const wastagePercent = input > 0 ? Number(((wastageQty / input) * 100).toFixed(2)) : 0;
+    return { finalOutput, wastageQty, wastagePercent };
   }
 
   if (loading) return <p className="p-6">Loading dyeing jobs...</p>;
@@ -219,11 +321,16 @@ export default function DyeingJobsPage() {
               <th className="border p-2 text-right">Received</th>
               <th className="border p-2">Status</th>
               <th className="border p-2">Update</th>
+              <th className="border p-2">Stages</th>
             </tr>
           </thead>
           <tbody>
-            {jobs.map(job => (
-              <tr key={job.id}>
+            {jobs.map(job => {
+              const stages = stagesByJob[job.id] ?? [];
+              const summary = wastageSummary(job, stages);
+              return (
+              <Fragment key={job.id}>
+                <tr>
                 <td className="border-b p-3">
                   <div className="font-medium">{job.jobNo}</div>
                   <div className="text-xs text-gray-500">{job.receivedDate}</div>
@@ -252,11 +359,121 @@ export default function DyeingJobsPage() {
                     ))}
                   </select>
                 </td>
-              </tr>
-            ))}
+                <td className="border-b p-3">
+                  <button
+                    type="button"
+                    className="rounded border border-indigo-200 px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50"
+                    onClick={() => toggleJob(job.id)}
+                  >
+                    {expandedJobId === job.id ? 'Hide pipeline' : 'View pipeline'}
+                  </button>
+                </td>
+                </tr>
+                {expandedJobId === job.id && (
+                  <tr key={`${job.id}-stages`}>
+                    <td colSpan={7} className="border-b bg-slate-50 p-4">
+                      <div className="space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <h3 className="text-sm font-semibold text-slate-800">
+                            Process pipeline for {job.jobNo}
+                          </h3>
+                          {summary && (
+                            <div className="flex gap-4 rounded-lg bg-white px-4 py-2 text-xs shadow-sm">
+                              <span>Input: <strong>{Number(job.quantityReceived).toFixed(3)} {job.unit}</strong></span>
+                              <span>Output: <strong>{summary.finalOutput.toFixed(3)} {job.unit}</strong></span>
+                              <span className="text-amber-700">Wastage: <strong>{summary.wastageQty.toFixed(3)} {job.unit} ({summary.wastagePercent}%)</strong></span>
+                            </div>
+                          )}
+                        </div>
+
+                        {stages.length === 0 && (
+                          <p className="text-sm text-slate-500">No process stages added yet.</p>
+                        )}
+
+                        <ol className="space-y-2">
+                          {stages.map(stage => (
+                            <li
+                              key={stage.id}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3"
+                            >
+                              <div>
+                                <div className="font-medium text-slate-800">
+                                  {stage.sequence}. {stage.stageName}
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                  Input: {stage.inputQty !== null ? Number(stage.inputQty).toFixed(3) : '—'} {job.unit}
+                                  {stage.outputQty !== null && (
+                                    <> · Output: {Number(stage.outputQty).toFixed(3)} {job.unit}</>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
+                                  {stageStatusLabels[stage.status]}
+                                </span>
+                                {stage.status === 'PENDING' && (
+                                  <button
+                                    type="button"
+                                    className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700"
+                                    onClick={() => startStage(job.id, stage.id)}
+                                  >
+                                    Start
+                                  </button>
+                                )}
+                                {stage.status === 'IN_PROGRESS' && (
+                                  <>
+                                    <input
+                                      className="w-28 rounded border p-1 text-xs"
+                                      type="number"
+                                      step="0.001"
+                                      min="0"
+                                      placeholder="Output qty"
+                                      value={outputInputs[stage.id] ?? ''}
+                                      onChange={event =>
+                                        setOutputInputs(current => ({
+                                          ...current,
+                                          [stage.id]: event.target.value,
+                                        }))
+                                      }
+                                    />
+                                    <button
+                                      type="button"
+                                      className="rounded bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700"
+                                      onClick={() => completeStage(job.id, stage.id)}
+                                    >
+                                      Complete
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ol>
+
+                        <form
+                          onSubmit={event => addStage(job.id, event)}
+                          className="flex items-center gap-2"
+                        >
+                          <input
+                            className="border p-2 rounded text-sm"
+                            placeholder="New stage name (e.g. Dye, Wash, Compact)"
+                            value={newStageName}
+                            onChange={event => setNewStageName(event.target.value)}
+                          />
+                          <button className="rounded bg-black px-3 py-2 text-xs font-medium text-white">
+                            Add stage
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+              );
+            })}
             {jobs.length === 0 && (
               <tr>
-                <td colSpan={6} className="border p-4 text-center text-gray-500">
+                <td colSpan={7} className="border p-4 text-center text-gray-500">
                   No dyeing jobs received yet
                 </td>
               </tr>
