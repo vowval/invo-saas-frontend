@@ -9,6 +9,7 @@ type Batch = {
   id: string;
   batchNo: string;
   recipe?: string;
+  recipeRef?: { id: string; code: string } | null;
   inputQty: number | string | null;
   status: 'SCHEDULED' | 'RUNNING' | 'COMPLETED';
   startTime?: string | null;
@@ -26,16 +27,33 @@ type Machine = {
 
 type DyeingJob = { id: string; jobNo: string; customerName: string };
 
+type Recipe = { id: string; code: string };
+
 const statusColors: Record<MachineStatus, string> = {
   IDLE: 'bg-slate-100 text-slate-600',
   RUNNING: 'bg-emerald-100 text-emerald-700',
   MAINTENANCE: 'bg-amber-100 text-amber-700',
 };
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (!(err instanceof Error)) return fallback;
+  try {
+    const jsonStart = err.message.indexOf('{');
+    if (jsonStart >= 0) {
+      const parsed = JSON.parse(err.message.slice(jsonStart));
+      if (parsed?.message) return Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
+    }
+  } catch {
+    // ignore parse errors, fall through to fallback
+  }
+  return fallback;
+}
+
 export default function MachinesPage() {
   const [machines, setMachines] = useState<Machine[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [jobs, setJobs] = useState<DyeingJob[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [machineForm, setMachineForm] = useState({ name: '', machineType: '' });
@@ -43,20 +61,23 @@ export default function MachinesPage() {
     batchNo: '',
     machineId: '',
     dyeingJobId: '',
-    recipe: '',
+    recipeId: '',
     inputQty: '',
   });
+  const [requirementPreview, setRequirementPreview] = useState<any[] | null>(null);
 
   async function loadBoard() {
     try {
-      const [board, allBatches, activeJobs] = await Promise.all([
+      const [board, allBatches, activeJobs, recipeList] = await Promise.all([
         apiFetch('/production/machines/board'),
         apiFetch('/production/batches'),
         apiFetch('/dyeing-jobs/active'),
+        apiFetch('/inventory/recipes'),
       ]);
       setMachines(board);
       setBatches(allBatches);
       setJobs(activeJobs);
+      setRecipes(recipeList);
     } catch {
       setError('Failed to load machine board');
     } finally {
@@ -67,6 +88,11 @@ export default function MachinesPage() {
   useEffect(() => {
     loadBoard();
   }, []);
+
+  useEffect(() => {
+    checkRequirement();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batchForm.recipeId, batchForm.inputQty]);
 
   async function createMachine(event: FormEvent) {
     event.preventDefault();
@@ -106,12 +132,28 @@ export default function MachinesPage() {
           ...batchForm,
           inputQty: batchForm.inputQty ? Number(batchForm.inputQty) : undefined,
           dyeingJobId: batchForm.dyeingJobId || undefined,
+          recipeId: batchForm.recipeId || undefined,
         }),
       });
-      setBatchForm({ batchNo: '', machineId: '', dyeingJobId: '', recipe: '', inputQty: '' });
+      setBatchForm({ batchNo: '', machineId: '', dyeingJobId: '', recipeId: '', inputQty: '' });
+      setRequirementPreview(null);
       await loadBoard();
     } catch {
       setError('Failed to create batch');
+    }
+  }
+
+  async function checkRequirement() {
+    if (!batchForm.recipeId || !batchForm.inputQty) {
+      setRequirementPreview(null);
+      return;
+    }
+    try {
+      setRequirementPreview(
+        await apiFetch(`/inventory/recipes/${batchForm.recipeId}/requirement?inputQty=${batchForm.inputQty}`),
+      );
+    } catch {
+      setRequirementPreview(null);
     }
   }
 
@@ -120,8 +162,8 @@ export default function MachinesPage() {
     try {
       await apiFetch(`/production/batches/${id}/start`, { method: 'PATCH' });
       await loadBoard();
-    } catch {
-      setError('Failed to start batch (machine may already be running or under maintenance)');
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Failed to start batch (machine may already be running, under maintenance, or chemical stock is insufficient)'));
     }
   }
 
@@ -200,22 +242,40 @@ export default function MachinesPage() {
               ))}
             </select>
             <div className="flex gap-3">
-              <input
+              <select
                 className="border p-2 rounded w-full"
-                placeholder="Recipe (e.g. BLACK-04)"
-                value={batchForm.recipe}
-                onChange={event => setBatchForm(current => ({ ...current, recipe: event.target.value }))}
-              />
+                value={batchForm.recipeId}
+                onChange={event => setBatchForm(current => ({ ...current, recipeId: event.target.value }))}
+              >
+                <option value="">Recipe (optional)</option>
+                {recipes.map(recipe => (
+                  <option key={recipe.id} value={recipe.id}>{recipe.code}</option>
+                ))}
+              </select>
               <input
                 className="border p-2 rounded w-full"
                 type="number"
                 step="0.001"
                 min="0"
-                placeholder="Input qty"
+                placeholder="Input qty (kg)"
                 value={batchForm.inputQty}
                 onChange={event => setBatchForm(current => ({ ...current, inputQty: event.target.value }))}
               />
             </div>
+
+            {requirementPreview && (
+              <div className="rounded-lg bg-slate-50 p-3 text-xs">
+                <p className="mb-1 font-medium text-slate-600">Chemicals required for this batch:</p>
+                <ul className="space-y-0.5">
+                  {requirementPreview.map((row: any) => (
+                    <li key={row.chemicalItemId} className={row.currentStock < row.requiredQty ? 'text-red-600' : 'text-slate-600'}>
+                      {row.name}: {row.requiredQty} {row.unit} (stock: {row.currentStock} {row.unit})
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <button className="bg-black text-white px-4 py-2 rounded">Schedule batch</button>
           </form>
         </div>
