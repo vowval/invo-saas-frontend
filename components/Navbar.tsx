@@ -36,6 +36,8 @@ export default function Navbar() {
         <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/machines">Machines</Link>
         <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/recipes">Recipes</Link>
         <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/chemicals">Chemicals</Link>
+        <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/lab-dips">Lab Dips</Link>
+        <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/quality-control">Quality Control</Link>
         <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/products">Services</Link>
         <Link className="rounded-full px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-700" href="/invoices">Invoices</Link>
       </div>
