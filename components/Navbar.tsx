@@ -41,6 +41,7 @@ const navGroups: NavGroup[] = [
       { href: '/products', label: 'Services' },
       { href: '/invoices', label: 'Invoices' },
       { href: '/customers', label: 'Customer Ledger' },
+      { href: '/costing', label: 'Production Costing' },
     ],
   },
 ];
