@@ -33,6 +33,12 @@ type Invoice = {
   totalAmount: number | string;
 };
 
+const formatNumber = (value: number | string, maximumFractionDigits = 3) =>
+  Number(value).toLocaleString('en-US', { maximumFractionDigits });
+
+const formatCurrency = (value: number | string, maximumFractionDigits = 2) =>
+  `₹${formatNumber(value, maximumFractionDigits)}`;
+
 const statusLabels = {
   RECEIVED: 'Received',
   IN_PROCESS: 'In process',
@@ -66,7 +72,7 @@ export default function DashboardPage() {
     return totals;
   }, {});
   const receivedQuantity = Object.entries(receivedByUnit)
-    .map(([unit, quantity]) => `${quantity.toFixed(3)} ${unit}`)
+    .map(([unit, quantity]) => `${formatNumber(quantity)} ${unit}`)
     .join(' · ') || '0';
   const invoiceTotal = invoices.reduce(
     (total, invoice) => total + Number(invoice.totalAmount),
@@ -112,10 +118,10 @@ export default function DashboardPage() {
 
       <section className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          ['Active jobs', activeJobs.toString(), 'Fabric currently in the workflow'],
-          ['Ready for delivery', readyJobs.toString(), 'Completed dyeing jobs'],
+          ['Active jobs', formatNumber(activeJobs, 0), 'Fabric currently in the workflow'],
+          ['Ready for delivery', formatNumber(readyJobs, 0), 'Completed dyeing jobs'],
           ['Fabric received', receivedQuantity, 'Total quantity recorded'],
-          ['Invoice value', `₹ ${invoiceTotal.toFixed(2)}`, 'Job work invoice subtotal'],
+          ['Invoice value', formatCurrency(invoiceTotal), 'Job work invoice subtotal'],
         ].map(([label, value, hint]) => (
           <div key={label} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
             <p className="text-xs sm:text-sm font-medium text-slate-500">{label}</p>
@@ -134,7 +140,7 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} width={60} />
-                <Tooltip formatter={(value: any) => `₹${Number(value).toFixed(2)}`} />
+                <Tooltip formatter={(value: any) => formatCurrency(Number(value))} />
                 <Bar dataKey="total" fill="#6366f1" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -180,7 +186,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-medium">{job.jobNo} · {job.customerName}</p>
                   <p className="text-sm text-gray-500">
-                    {job.fabricType} · {Number(job.quantityReceived).toFixed(3)} {job.unit}
+                    {job.fabricType} · {formatNumber(job.quantityReceived)} {job.unit}
                   </p>
                 </div>
                 <span className="text-sm text-gray-600">
@@ -206,7 +212,7 @@ export default function DashboardPage() {
             {invoices.slice(0, 5).map(invoice => (
               <div key={invoice.id} className="flex justify-between border-b pb-3">
                 <span>{invoice.invoiceNo} · {invoice.buyerName}</span>
-                <span className="font-medium">₹ {Number(invoice.totalAmount).toFixed(2)}</span>
+                <span className="font-medium">{formatCurrency(invoice.totalAmount)}</span>
               </div>
             ))}
             {invoices.length === 0 && <p className="text-sm text-gray-500">No invoices created yet.</p>}
