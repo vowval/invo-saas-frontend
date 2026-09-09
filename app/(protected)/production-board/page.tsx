@@ -4,16 +4,20 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 
 type TrackingStatus =
-  | 'RECEIVED'
-  | 'WAITING_FOR_PRODUCTION'
-  | 'IN_DYEING'
-  | 'WASHING'
+  | 'FABRIC_RECEIVED'
+  | 'FABRIC_INSPECTION'
+  | 'JOB_CARD_PRODUCTION_ORDER'
+  | 'LAB_DIP_SHADE_APPROVAL'
+  | 'DYEING'
+  | 'WASHING_AFTER_TREATMENT'
   | 'FINISHING'
-  | 'QC'
-  | 'PACKED'
-  | 'READY_FOR_DISPATCH'
-  | 'DISPATCHED'
-  | 'RETURNED';
+  | 'QUALITY_CHECK'
+  | 'PACKING'
+  | 'READY_FOR_DELIVERY'
+  | 'DELIVERY'
+  | 'READY_FOR_INVOICE'
+  | 'GST_INVOICE'
+  | 'PAYMENT_CLOSED';
 
 type BoardJob = {
   id: string;
@@ -28,29 +32,37 @@ type BoardJob = {
 type StatusBoard = Record<TrackingStatus, BoardJob[]>;
 
 const columnOrder: TrackingStatus[] = [
-  'RECEIVED',
-  'WAITING_FOR_PRODUCTION',
-  'IN_DYEING',
-  'WASHING',
+  'FABRIC_RECEIVED',
+  'FABRIC_INSPECTION',
+  'JOB_CARD_PRODUCTION_ORDER',
+  'LAB_DIP_SHADE_APPROVAL',
+  'DYEING',
+  'WASHING_AFTER_TREATMENT',
   'FINISHING',
-  'QC',
-  'PACKED',
-  'READY_FOR_DISPATCH',
-  'DISPATCHED',
-  'RETURNED',
+  'QUALITY_CHECK',
+  'PACKING',
+  'READY_FOR_DELIVERY',
+  'DELIVERY',
+  'READY_FOR_INVOICE',
+  'GST_INVOICE',
+  'PAYMENT_CLOSED',
 ];
 
 const columnLabels: Record<TrackingStatus, string> = {
-  RECEIVED: 'Received',
-  WAITING_FOR_PRODUCTION: 'Waiting for production',
-  IN_DYEING: 'In dyeing',
-  WASHING: 'Washing',
-  FINISHING: 'Finishing',
-  QC: 'QC',
-  PACKED: 'Packed',
-  READY_FOR_DISPATCH: 'Ready for dispatch',
-  DISPATCHED: 'Dispatched',
-  RETURNED: 'Returned',
+  FABRIC_RECEIVED: '1. Fabric received',
+  FABRIC_INSPECTION: '2. Fabric inspection',
+  JOB_CARD_PRODUCTION_ORDER: '3. Job card / production order',
+  LAB_DIP_SHADE_APPROVAL: '4. Lab dip / shade approval',
+  DYEING: '5. Dyeing',
+  WASHING_AFTER_TREATMENT: '6. Washing / after-treatment',
+  FINISHING: '7. Finishing',
+  QUALITY_CHECK: '8. Quality check',
+  PACKING: '9. Packing',
+  READY_FOR_DELIVERY: '10. Ready for delivery',
+  DELIVERY: '11. Delivery',
+  READY_FOR_INVOICE: '12. Ready for invoice',
+  GST_INVOICE: '13. GST invoice',
+  PAYMENT_CLOSED: '14. Payment / closed',
 };
 
 export default function ProductionBoardPage() {
@@ -115,17 +127,15 @@ export default function ProductionBoardPage() {
                     <div className="text-xs text-slate-500">
                       {job.fabricType} · {Number(job.quantityReceived).toFixed(3)} {job.unit}
                     </div>
-                    <select
-                      className="mt-2 w-full rounded border p-1 text-xs"
-                      value={job.trackingStatus}
-                      onChange={event => moveJob(job.id, event.target.value as TrackingStatus)}
-                    >
-                      {columnOrder.map(option => (
-                        <option key={option} value={option}>
-                          {columnLabels[option]}
-                        </option>
-                      ))}
-                    </select>
+                    {job.trackingStatus !== 'PAYMENT_CLOSED' && (
+                      <button
+                        type="button"
+                        className="mt-2 w-full rounded bg-indigo-600 p-1 text-xs font-medium text-white hover:bg-indigo-700"
+                        onClick={() => moveJob(job.id, columnOrder[columnOrder.indexOf(job.trackingStatus) + 1])}
+                      >
+                        Move to {columnLabels[columnOrder[columnOrder.indexOf(job.trackingStatus) + 1]]}
+                      </button>
+                    )}
                   </div>
                 ))}
                 {(board?.[status]?.length ?? 0) === 0 && (

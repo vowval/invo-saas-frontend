@@ -3,12 +3,6 @@
 import { FormEvent, Fragment, useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 
-type JobStatus =
-  | 'RECEIVED'
-  | 'IN_PROCESS'
-  | 'READY_FOR_DELIVERY'
-  | 'DELIVERED';
-
 type DyeingJob = {
   id: string;
   jobNo: string;
@@ -21,7 +15,7 @@ type DyeingJob = {
   quantityDelivered: number | string;
   receivedDate: string;
   expectedDeliveryDate?: string;
-  status: JobStatus;
+  trackingStatus: string;
   partyDcNo?: string;
   processNotes?: string;
 };
@@ -42,20 +36,6 @@ const stageStatusLabels: Record<StageStatus, string> = {
   PENDING: 'Pending',
   IN_PROGRESS: 'In progress',
   COMPLETED: 'Completed',
-};
-
-const statuses: JobStatus[] = [
-  'RECEIVED',
-  'IN_PROCESS',
-  'READY_FOR_DELIVERY',
-  'DELIVERED',
-];
-
-const statusLabels: Record<JobStatus, string> = {
-  RECEIVED: 'Received',
-  IN_PROCESS: 'In process',
-  READY_FOR_DELIVERY: 'Ready for delivery',
-  DELIVERED: 'Delivered',
 };
 
 export default function DyeingJobsPage() {
@@ -137,25 +117,6 @@ export default function DyeingJobsPage() {
       await loadJobs();
     } catch {
       setError('Failed to receive fabric');
-    }
-  }
-
-  async function changeStatus(job: DyeingJob, status: JobStatus) {
-    setError('');
-    try {
-      await apiFetch(`/dyeing-jobs/${job.id}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          status,
-          quantityDelivered:
-            status === 'DELIVERED'
-              ? Number(job.quantityReceived)
-              : Number(job.quantityDelivered),
-        }),
-      });
-      await loadJobs();
-    } catch {
-      setError('Failed to update job status');
     }
   }
 
@@ -362,7 +323,6 @@ export default function DyeingJobsPage() {
               <th className="border p-2 text-left">Fabric / shade</th>
               <th className="border p-2 text-right">Received</th>
               <th className="border p-2">Status</th>
-              <th className="border p-2">Update</th>
               <th className="border p-2">Stages</th>
             </tr>
           </thead>
@@ -385,21 +345,10 @@ export default function DyeingJobsPage() {
                 <td className="border-b p-3 text-right">
                   {Number(job.quantityReceived).toFixed(3)} {job.unit}
                 </td>
-                <td className="border-b p-3"><span className="rounded-full bg-indigo-50 px-2 py-1 text-xs text-indigo-700">{statusLabels[job.status]}</span></td>
                 <td className="border-b p-3">
-                  <select
-                    className="border p-1 rounded"
-                    value={job.status}
-                    onChange={event =>
-                      changeStatus(job, event.target.value as JobStatus)
-                    }
-                  >
-                    {statuses.map(status => (
-                      <option key={status} value={status}>
-                        {statusLabels[status]}
-                      </option>
-                    ))}
-                  </select>
+                  <span className="rounded-full bg-indigo-50 px-2 py-1 text-xs text-indigo-700">
+                    {job.trackingStatus.replaceAll('_', ' ')}
+                  </span>
                 </td>
                 <td className="border-b p-3">
                   <button
@@ -413,7 +362,7 @@ export default function DyeingJobsPage() {
                 </tr>
                 {expandedJobId === job.id && (
                   <tr key={`${job.id}-stages`}>
-                    <td colSpan={7} className="border-b bg-slate-50 p-4">
+                    <td colSpan={6} className="border-b bg-slate-50 p-4">
                       <div className="space-y-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <h3 className="text-sm font-semibold text-slate-800">
