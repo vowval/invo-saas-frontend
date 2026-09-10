@@ -173,11 +173,6 @@ export default function Navigation() {
       label: 'Operations',
       children: [
         {
-          key: 'production-board',
-          icon: <PicCenterOutlined />,
-          label: <Link href="/production-board">Production Board</Link>,
-        },
-        {
           key: 'process-route-builder',
           icon: <CopyOutlined />,
           label: <Link href="/process-route-builder">Process Route</Link>,
@@ -196,6 +191,16 @@ export default function Navigation() {
           key: 'dyeing-execution',
           icon: <FormatPainterOutlined />,
           label: <Link href="/dyeing-execution">Dyeing Execution</Link>,
+        },
+        {
+          key: 'drying-execution',
+          icon: <AppstoreOutlined />,
+          label: <Link href="/drying-execution">Drying Execution</Link>,
+        },
+        {
+          key: 'finishing-execution',
+          icon: <AppstoreOutlined />,
+          label: <Link href="/finishing-execution">Finishing Execution</Link>,
         },
         {
           key: 'quality-control',
@@ -294,11 +299,6 @@ export default function Navigation() {
       label: 'Work',
       children: [
         {
-          key: 'production-board',
-          icon: <PicCenterOutlined />,
-          label: <Link href="/production-board">Production Board</Link>,
-        },
-        {
           key: 'dyeing-jobs',
           icon: <ShoppingCartOutlined />,
           label: <Link href="/dyeing-jobs">Assigned Jobs</Link>,
@@ -329,7 +329,6 @@ export default function Navigation() {
     if (pathname?.includes('process-route-builder')) return 'process-route-builder';
     if (pathname?.includes('process-master')) return 'process-master';
     if (pathname?.includes('user-management') || pathname?.includes('users')) return 'user-management';
-    if (pathname?.includes('production-board')) return 'production-board';
     if (pathname?.includes('dyeing-jobs')) return 'dyeing-jobs';
     if (pathname?.includes('quality-control')) return 'quality-control';
     if (pathname?.includes('customers')) return 'customers';

@@ -17,7 +17,6 @@ const navGroups: NavGroup[] = [
     label: 'Production',
     items: [
       { href: '/dyeing-jobs', label: 'Jobs' },
-      { href: '/production-board', label: 'Production Board' },
       { href: '/machines', label: 'Machines' },
     ],
   },
