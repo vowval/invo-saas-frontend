@@ -6,15 +6,12 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   Layout,
   Menu,
-  Button,
   Dropdown,
   Avatar,
   Spin,
   message,
 } from 'antd';
 import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   DashboardOutlined,
   SettingOutlined,
   LogoutOutlined,
@@ -30,7 +27,6 @@ import {
   DatabaseOutlined,
   SafetyOutlined,
   UserOutlined,
-  HomeOutlined,
   DropboxOutlined,
 } from '@ant-design/icons';
 
@@ -44,18 +40,13 @@ interface DecodedToken {
   exp?: number;
 }
 
-interface NavProps {
-  collapsed?: boolean;
-}
-
 /**
  * Navigation Component
- * Displays role-based sidebar menu
+ * Full-height scrollable sidebar with logo always visible
  */
-export default function Navigation({ collapsed: initialCollapsed = false }: NavProps) {
+export default function Navigation() {
   const router = useRouter();
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('User');
@@ -66,7 +57,7 @@ export default function Navigation({ collapsed: initialCollapsed = false }: NavP
     if (token) {
       try {
         const base64Payload = token.split('.')[1];
-        const payload = Buffer.from(base64Payload, 'base64').toString('utf-8');
+        const payload = atob(base64Payload);
         const decoded: DecodedToken = JSON.parse(payload);
         setRole(decoded.role as UserRole || 'STAFF');
         setUserName(localStorage.getItem('userName') || 'User');
@@ -322,9 +313,6 @@ export default function Navigation({ collapsed: initialCollapsed = false }: NavP
 
   return (
     <Layout.Sider
-      collapsible
-      collapsed={isCollapsed}
-      onCollapse={setIsCollapsed}
       width={256}
       style={{
         minHeight: '100vh',
@@ -333,10 +321,13 @@ export default function Navigation({ collapsed: initialCollapsed = false }: NavP
         left: 0,
         top: 0,
         bottom: 0,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
         zIndex: 1000,
       }}
     >
-      {/* Logo/Branding */}
+      {/* Logo/Branding - Always Visible */}
       <div
         style={{
           padding: '16px',
@@ -349,39 +340,42 @@ export default function Navigation({ collapsed: initialCollapsed = false }: NavP
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          flexShrink: 0,
         }}
       >
-        {!isCollapsed && (
-          <span>
-            <DatabaseOutlined style={{ marginRight: '8px' }} />
-            Textile Pro
-          </span>
-        )}
-        {isCollapsed && <DatabaseOutlined style={{ fontSize: '20px' }} />}
+        <DatabaseOutlined style={{ marginRight: '8px', fontSize: '20px' }} />
+        <span>Textile Pro</span>
       </div>
 
-      {/* Menu */}
-      <Menu
-        theme="dark"
-        mode="inline"
-        selectedKeys={[getSelectedKey()]}
-        items={menuItems}
-        style={{
-          borderRight: 0,
-          marginTop: '16px',
-        }}
-      />
-
-      {/* User Profile at Bottom */}
+      {/* Scrollable Menu */}
       <div
         style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
+          flex: 1,
+          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[getSelectedKey()]}
+          items={menuItems}
+          style={{
+            borderRight: 0,
+            marginTop: '16px',
+            flex: 1,
+          }}
+        />
+      </div>
+
+      {/* User Profile at Bottom - Always Visible */}
+      <div
+        style={{
           padding: '16px',
           borderTop: '1px solid #434343',
           backgroundColor: '#001529',
+          flexShrink: 0,
         }}
       >
         <Dropdown menu={{ items: userMenuItems }} placement="topRight">
@@ -400,26 +394,24 @@ export default function Navigation({ collapsed: initialCollapsed = false }: NavP
             <Avatar
               size={32}
               icon={<UserOutlined />}
-              style={{ backgroundColor: '#1890ff' }}
+              style={{ backgroundColor: '#1890ff', flexShrink: 0 }}
             />
-            {!isCollapsed && (
-              <div style={{ flex: 1, overflow: 'hidden' }}>
-                <div style={{ fontSize: '12px', color: '#rgba(255,255,255,0.65)' }}>
-                  {role === 'SUPER_ADMIN' ? 'Super Admin' : role === 'ADMIN' ? 'Factory Admin' : 'Staff'}
-                </div>
-                <div
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {userName}
-                </div>
+            <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.65)' }}>
+                {role === 'SUPER_ADMIN' ? 'Super Admin' : role === 'ADMIN' ? 'Factory Admin' : 'Staff'}
               </div>
-            )}
+              <div
+                style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {userName}
+              </div>
+            </div>
           </div>
         </Dropdown>
       </div>
