@@ -28,6 +28,8 @@ import {
   SafetyOutlined,
   UserOutlined,
   DropboxOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons';
 
 type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'STAFF' | null;
@@ -50,6 +52,8 @@ export default function Navigation() {
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('User');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [openMenuKeys, setOpenMenuKeys] = useState<string[]>([]);
 
   useEffect(() => {
     // Decode JWT from localStorage
@@ -66,6 +70,13 @@ export default function Navigation() {
         setRole('STAFF');
       }
     }
+    
+    // Load sidebar state from localStorage
+    const savedSidebarState = localStorage.getItem('sidebarCollapsed');
+    if (savedSidebarState !== null) {
+      setSidebarCollapsed(JSON.parse(savedSidebarState));
+    }
+    
     setLoading(false);
   }, []);
 
@@ -301,9 +312,27 @@ export default function Navigation() {
     return 'dashboard';
   };
 
+  // Handle menu open/close - only allow one parent menu open at a time
+  const handleOpenMenuChange = (keys: string[]) => {
+    // Only keep the last opened key
+    const latestOpenKey = keys.find((key) => openMenuKeys.indexOf(key) === -1);
+    if (latestOpenKey) {
+      setOpenMenuKeys([latestOpenKey]);
+    } else {
+      setOpenMenuKeys(keys);
+    }
+  };
+
   if (loading) {
     return (
-      <Layout.Sider width={256} style={{ minHeight: '100vh', background: '#fff' }}>
+      <Layout.Sider 
+        width={sidebarCollapsed ? 64 : 256} 
+        style={{ 
+          minHeight: '100vh', 
+          background: '#fff',
+          transition: 'width 0.3s ease',
+        }}
+      >
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
           <Spin />
         </div>
@@ -313,7 +342,7 @@ export default function Navigation() {
 
   return (
     <Layout.Sider
-      width={256}
+      width={sidebarCollapsed ? 64 : 256}
       style={{
         minHeight: '100vh',
         background: '#001529',
@@ -325,12 +354,13 @@ export default function Navigation() {
         display: 'flex',
         flexDirection: 'column',
         zIndex: 1000,
+        transition: 'width 0.3s ease',
       }}
     >
-      {/* Logo/Branding - Always Visible */}
+      {/* Logo/Branding + Toggle - Always Visible */}
       <div
         style={{
-          padding: '16px',
+          padding: sidebarCollapsed ? '8px' : '16px',
           color: 'white',
           fontSize: '18px',
           fontWeight: 'bold',
@@ -339,12 +369,39 @@ export default function Navigation() {
           height: '64px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
           flexShrink: 0,
         }}
       >
-        <DatabaseOutlined style={{ marginRight: '8px', fontSize: '20px' }} />
-        <span>Textile Pro</span>
+        {!sidebarCollapsed && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <DatabaseOutlined style={{ fontSize: '20px' }} />
+              <span>Textile Pro</span>
+            </div>
+          </>
+        )}
+        <button
+          onClick={() => {
+            const newState = !sidebarCollapsed;
+            setSidebarCollapsed(newState);
+            localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'white',
+            cursor: 'pointer',
+            fontSize: '18px',
+            padding: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+        </button>
       </div>
 
       {/* Scrollable Menu */}
@@ -360,10 +417,13 @@ export default function Navigation() {
           theme="dark"
           mode="inline"
           selectedKeys={[getSelectedKey()]}
+          openKeys={sidebarCollapsed ? [] : openMenuKeys}
+          onOpenChange={handleOpenMenuChange}
           items={menuItems}
+          inlineCollapsed={sidebarCollapsed}
           style={{
             borderRight: 0,
-            marginTop: '16px',
+            marginTop: sidebarCollapsed ? '0' : '16px',
             flex: 1,
           }}
         />
@@ -372,10 +432,12 @@ export default function Navigation() {
       {/* User Profile at Bottom - Always Visible */}
       <div
         style={{
-          padding: '16px',
+          padding: sidebarCollapsed ? '8px' : '16px',
           borderTop: '1px solid #434343',
           backgroundColor: '#001529',
           flexShrink: 0,
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
         <Dropdown menu={{ items: userMenuItems }} placement="topRight">
@@ -383,12 +445,14 @@ export default function Navigation() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: sidebarCollapsed ? '0' : '8px',
               cursor: 'pointer',
               padding: '8px',
               borderRadius: '4px',
               backgroundColor: '#1890ff14',
               color: 'white',
+              width: '100%',
+              justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
             }}
           >
             <Avatar
@@ -396,22 +460,24 @@ export default function Navigation() {
               icon={<UserOutlined />}
               style={{ backgroundColor: '#1890ff', flexShrink: 0 }}
             />
-            <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.65)' }}>
-                {role === 'SUPER_ADMIN' ? 'Super Admin' : role === 'ADMIN' ? 'Factory Admin' : 'Staff'}
+            {!sidebarCollapsed && (
+              <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.65)' }}>
+                  {role === 'SUPER_ADMIN' ? 'Super Admin' : role === 'ADMIN' ? 'Factory Admin' : 'Staff'}
+                </div>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {userName}
+                </div>
               </div>
-              <div
-                style={{
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {userName}
-              </div>
-            </div>
+            )}
           </div>
         </Dropdown>
       </div>

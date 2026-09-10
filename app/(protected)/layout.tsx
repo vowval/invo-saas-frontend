@@ -26,6 +26,7 @@ export default function ProtectedLayout({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -37,13 +38,29 @@ export default function ProtectedLayout({
 
     const decoded = decodeJwt(token);
 
-    // 🚫 Super admin must not see factory-admin dashboard
     if (decoded?.role === 'SUPER_ADMIN') {
       router.push('/super-admin/companies');
       return;
     }
 
+    // Load sidebar state
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState !== null) {
+      setSidebarCollapsed(JSON.parse(savedState));
+    }
+
+    // Listen for sidebar changes
+    const handleStorageChange = () => {
+      const newState = localStorage.getItem('sidebarCollapsed');
+      if (newState !== null) {
+        setSidebarCollapsed(JSON.parse(newState));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
     setLoading(false);
+
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [router]);
 
   if (loading) {
@@ -58,10 +75,12 @@ export default function ProtectedLayout({
     );
   }
 
+  const marginLeft = sidebarCollapsed ? 64 : 256;
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Navigation />
-      <Layout style={{ marginLeft: 256 }}>
+      <Layout style={{ marginLeft, transition: 'margin-left 0.3s ease' }}>
         <Layout.Content
           style={{
             padding: '24px',
