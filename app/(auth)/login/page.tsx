@@ -42,7 +42,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-145px)] items-center justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 px-6 py-12">
       <form
         onSubmit={handleLogin}
         className="w-full max-w-md space-y-6 rounded-2xl border border-white/10 bg-white p-8 shadow-2xl"

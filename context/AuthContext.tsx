@@ -72,10 +72,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    // Clear all auth cookies
     document.cookie = 'token=; Max-Age=0; path=/';
+    document.cookie = 'token=; Max-Age=0; path=/; domain=' + window.location.hostname;
 
     notifyAuthChange();
-    router.push('/login');
+    // Add a small delay to ensure cookies are cleared before redirecting
+    setTimeout(() => {
+      router.push('/login');
+    }, 100);
   }
 
   return (
