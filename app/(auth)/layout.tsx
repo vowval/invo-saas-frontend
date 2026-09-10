@@ -1,38 +1,8 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-
-type JwtPayload = {
-  role?: 'SUPER_ADMIN' | 'ADMIN' | 'USER';
-};
-
-function decodeJwt(token: string): JwtPayload | null {
-  try {
-    const base64Payload = token.split('.')[1];
-    const payload = Buffer.from(base64Payload, 'base64').toString('utf-8');
-    return JSON.parse(payload);
-  } catch {
-    return null;
-  }
-}
-
-export default async function AuthLayout({
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies(); // ✅ MUST await
-  const token = cookieStore.get('token')?.value;
-
-  if (token) {
-    const decoded = decodeJwt(token);
-
-    if (decoded?.role === 'SUPER_ADMIN') {
-      redirect('/super-admin/companies');
-    }
-
-    redirect('/dashboard');
-  }
-
   return (
     <div className="min-h-screen bg-slate-950">
       <header className="border-b border-white/10 bg-slate-950/95 text-white">
