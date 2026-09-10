@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Layout } from 'antd';
+import { Layout, Spin } from 'antd';
 import Navigation from '@/components/Navigation';
 
 type JwtPayload = {
@@ -19,7 +19,7 @@ function decodeJwt(token: string): JwtPayload | null {
   }
 }
 
-export default function ProtectedLayout({
+export default function SuperAdminLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -38,9 +38,9 @@ export default function ProtectedLayout({
 
     const decoded = decodeJwt(token);
 
-    // 🚫 Super admin must not see factory-admin dashboard
-    if (decoded?.role === 'SUPER_ADMIN') {
-      router.push('/super-admin/companies');
+    // 🚫 Only super admin can access this
+    if (decoded?.role !== 'SUPER_ADMIN') {
+      router.push('/dashboard');
       return;
     }
 
@@ -48,7 +48,11 @@ export default function ProtectedLayout({
   }, [router]);
 
   if (loading) {
-    return null;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin />
+      </div>
+    );
   }
 
   return (
