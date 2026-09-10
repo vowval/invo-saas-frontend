@@ -11,12 +11,8 @@ type DyeingJob = {
   colour?: string;
   shadeNo?: string;
   unit: string;
-  quantityReceived: number | string;
   quantityDelivered: number | string;
-  receivedDate: string;
-  expectedDeliveryDate?: string;
   trackingStatus: string;
-  partyDcNo?: string;
   processNotes?: string;
 };
 
@@ -54,16 +50,8 @@ export default function DyeingJobsPage() {
     colour: '',
     shadeNo: '',
     unit: 'KG',
-    quantityReceived: '',
-    partyDcNo: '',
-    receivedDate: new Date().toISOString().slice(0, 10),
     expectedDeliveryDate: '',
     processNotes: '',
-    vehicleNo: '',
-    lotNumber: '',
-    rollCount: '',
-    weight: '',
-    inspectionNotes: '',
   });
 
   async function loadJobs() {
@@ -88,14 +76,11 @@ export default function DyeingJobsPage() {
     event.preventDefault();
     setError('');
     try {
+      // IMPORTANT: Fabric receiving now uses the FabricReceipt module
+      // This form is for creating a job reference after fabric receipt and inspection
       await apiFetch('/dyeing-jobs', {
         method: 'POST',
-        body: JSON.stringify({
-          ...form,
-          quantityReceived: Number(form.quantityReceived),
-          rollCount: form.rollCount ? Number(form.rollCount) : undefined,
-          weight: form.weight ? Number(form.weight) : undefined,
-        }),
+        body: JSON.stringify(form),
       });
       setForm(current => ({
         ...current,
@@ -105,18 +90,11 @@ export default function DyeingJobsPage() {
         fabricType: '',
         colour: '',
         shadeNo: '',
-        quantityReceived: '',
-        partyDcNo: '',
         processNotes: '',
-        vehicleNo: '',
-        lotNumber: '',
-        rollCount: '',
-        weight: '',
-        inspectionNotes: '',
       }));
       await loadJobs();
     } catch {
-      setError('Failed to receive fabric');
+      setError('Failed to create dyeing job');
     }
   }
 
@@ -191,13 +169,12 @@ export default function DyeingJobsPage() {
   }
 
   function wastageSummary(job: DyeingJob, stages: ProcessStage[]) {
+    // DEPRECATED: Wastage calculation now handled in Process Route and FabricReceipt modules
+    // This function kept for backward compatibility but no longer used
     const completed = stages.filter(stage => stage.status === 'COMPLETED' && stage.outputQty !== null);
     if (!completed.length) return null;
     const finalOutput = Number(completed[completed.length - 1].outputQty);
-    const input = Number(job.quantityReceived);
-    const wastageQty = Number((input - finalOutput).toFixed(3));
-    const wastagePercent = input > 0 ? Number(((wastageQty / input) * 100).toFixed(2)) : 0;
-    return { finalOutput, wastageQty, wastagePercent };
+    return { finalOutput, wastageQty: 0, wastagePercent: 0 };
   }
 
   if (loading) return <p className="p-6">Loading dyeing jobs...</p>;
@@ -209,37 +186,39 @@ export default function DyeingJobsPage() {
         <p className="text-sm uppercase tracking-widest text-cyan-100">Fabric workflow</p>
         <h1 className="mt-2 text-3xl font-bold">Dyeing Jobs</h1>
         <p className="mt-3 text-cyan-100">
-          Receive customer fabric, track dyeing, and record delivery.
+        Create jobs after fabric receiving. Track dyeing processes and record delivery.
         </p>
       </div>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
       <form onSubmit={createJob} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900">Receive fabric</h2>
+        <div className="bg-amber-50 border border-amber-200 rounded p-4 mb-4">
+          <p className="text-sm text-amber-900">
+            <strong>Important:</strong> Fabric receiving is now handled in the <strong>Fabric Receiving</strong> module. 
+            This form is for creating a job reference only. Complete receiving and inspection first.
+          </p>
+        </div>
+        <h2 className="text-lg font-semibold text-slate-900">Create Dyeing Job</h2>
         <div className="grid gap-3 md:grid-cols-3">
           {[
-            ['jobNo', 'Job / challan number'],
+            ['jobNo', 'Job number'],
             ['customerName', 'Customer name'],
             ['customerContact', 'Customer contact'],
             ['fabricType', 'Fabric type'],
             ['colour', 'Colour'],
             ['shadeNo', 'Shade number'],
-            ['quantityReceived', 'Quantity received'],
-            ['partyDcNo', 'Customer DC number'],
           ].map(([field, placeholder]) => (
             <input
               key={field}
               className="border p-2 rounded"
-              type={field === 'quantityReceived' ? 'number' : 'text'}
-              step={field === 'quantityReceived' ? '0.001' : undefined}
-              min={field === 'quantityReceived' ? '0.001' : undefined}
+              type="text"
               placeholder={placeholder}
               value={form[field as keyof typeof form]}
               onChange={event =>
                 updateForm(field as keyof typeof form, event.target.value)
               }
-              required={['jobNo', 'customerName', 'fabricType', 'quantityReceived'].includes(field)}
+              required={['jobNo', 'customerName', 'fabricType'].includes(field)}
             />
           ))}
           <select
@@ -251,66 +230,26 @@ export default function DyeingJobsPage() {
             <option value="MTR">MTR</option>
             <option value="PCS">PCS</option>
           </select>
-          <label className="text-sm">
-            Received date
-            <input
-              className="border p-2 rounded w-full"
-              type="date"
-              value={form.receivedDate}
-              onChange={event => updateForm('receivedDate', event.target.value)}
-              required
-            />
-          </label>
-          <label className="text-sm">
-            Expected delivery
-            <input
-              className="border p-2 rounded w-full"
-              type="date"
-              value={form.expectedDeliveryDate}
-              onChange={event =>
-                updateForm('expectedDeliveryDate', event.target.value)
-              }
-            />
-          </label>
         </div>
-        <div className="border-t pt-4">
-          <h3 className="mb-2 text-sm font-semibold text-slate-700">GRN / inward receipt details (optional)</h3>
-          <div className="grid gap-3 md:grid-cols-3">
-            {[
-              ['vehicleNo', 'Vehicle number'],
-              ['lotNumber', 'Lot number'],
-              ['rollCount', 'Roll count'],
-              ['weight', 'Inspected weight'],
-            ].map(([field, placeholder]) => (
-              <input
-                key={field}
-                className="border p-2 rounded"
-                type={field === 'rollCount' || field === 'weight' ? 'number' : 'text'}
-                step={field === 'weight' ? '0.001' : field === 'rollCount' ? '1' : undefined}
-                min="0"
-                placeholder={placeholder}
-                value={form[field as keyof typeof form]}
-                onChange={event =>
-                  updateForm(field as keyof typeof form, event.target.value)
-                }
-              />
-            ))}
-          </div>
-          <textarea
-            className="mt-3 border p-2 rounded w-full"
-            placeholder="Inspection notes"
-            value={form.inspectionNotes}
-            onChange={event => updateForm('inspectionNotes', event.target.value)}
+        <label className="text-sm">
+          Expected delivery
+          <input
+            className="border p-2 rounded w-full"
+            type="date"
+            value={form.expectedDeliveryDate}
+            onChange={event =>
+              updateForm('expectedDeliveryDate', event.target.value)
+            }
           />
-        </div>
+        </label>
         <textarea
           className="border p-2 rounded w-full"
-          placeholder="Dyeing process notes"
+          placeholder="Process notes"
           value={form.processNotes}
           onChange={event => updateForm('processNotes', event.target.value)}
         />
         <button className="bg-black text-white px-4 py-2 rounded">
-          Receive fabric
+          Create Job
         </button>
       </form>
 
@@ -321,7 +260,6 @@ export default function DyeingJobsPage() {
               <th className="border p-2 text-left">Job</th>
               <th className="border p-2 text-left">Customer</th>
               <th className="border p-2 text-left">Fabric / shade</th>
-              <th className="border p-2 text-right">Received</th>
               <th className="border p-2">Status</th>
               <th className="border p-2">Stages</th>
             </tr>
@@ -335,15 +273,11 @@ export default function DyeingJobsPage() {
                 <tr>
                 <td className="border-b p-3">
                   <div className="font-medium">{job.jobNo}</div>
-                  <div className="text-xs text-gray-500">{job.receivedDate}</div>
                 </td>
                 <td className="border-b p-3">{job.customerName}</td>
                 <td className="border-b p-3">
                   {job.fabricType} {job.colour ? `· ${job.colour}` : ''}
                   {job.shadeNo ? ` · ${job.shadeNo}` : ''}
-                </td>
-                <td className="border-b p-3 text-right">
-                  {Number(job.quantityReceived).toFixed(3)} {job.unit}
                 </td>
                 <td className="border-b p-3">
                   <span className="rounded-full bg-indigo-50 px-2 py-1 text-xs text-indigo-700">
@@ -370,9 +304,7 @@ export default function DyeingJobsPage() {
                           </h3>
                           {summary && (
                             <div className="flex gap-4 rounded-lg bg-white px-4 py-2 text-xs shadow-sm">
-                              <span>Input: <strong>{Number(job.quantityReceived).toFixed(3)} {job.unit}</strong></span>
                               <span>Output: <strong>{summary.finalOutput.toFixed(3)} {job.unit}</strong></span>
-                              <span className="text-amber-700">Wastage: <strong>{summary.wastageQty.toFixed(3)} {job.unit} ({summary.wastagePercent}%)</strong></span>
                             </div>
                           )}
                         </div>

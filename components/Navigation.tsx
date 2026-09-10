@@ -153,6 +153,22 @@ export default function Navigation() {
       ],
     },
     {
+      key: 'receiving',
+      label: 'Receiving',
+      children: [
+        {
+          key: 'fabric-receiving',
+          icon: <ShoppingCartOutlined />,
+          label: <Link href="/fabric-receiving">Fabric Receiving</Link>,
+        },
+        {
+          key: 'fabric-inspection',
+          icon: <SafetyOutlined />,
+          label: <Link href="/fabric-inspection">Fabric Inspection</Link>,
+        },
+      ],
+    },
+    {
       key: 'operations',
       label: 'Operations',
       children: [
@@ -162,9 +178,24 @@ export default function Navigation() {
           label: <Link href="/production-board">Production Board</Link>,
         },
         {
+          key: 'process-route-builder',
+          icon: <CopyOutlined />,
+          label: <Link href="/process-route-builder">Process Route</Link>,
+        },
+        {
           key: 'dyeing-jobs',
           icon: <ShoppingCartOutlined />,
           label: <Link href="/dyeing-jobs">Dyeing Jobs</Link>,
+        },
+        {
+          key: 'washing-execution',
+          icon: <AppstoreOutlined />,
+          label: <Link href="/washing-execution">Washing Execution</Link>,
+        },
+        {
+          key: 'dyeing-execution',
+          icon: <FormatPainterOutlined />,
+          label: <Link href="/dyeing-execution">Dyeing Execution</Link>,
         },
         {
           key: 'quality-control',
@@ -293,6 +324,9 @@ export default function Navigation() {
 
   // Find selected key based on current pathname
   const getSelectedKey = () => {
+    if (pathname?.includes('fabric-receiving')) return 'fabric-receiving';
+    if (pathname?.includes('fabric-inspection')) return 'fabric-inspection';
+    if (pathname?.includes('process-route-builder')) return 'process-route-builder';
     if (pathname?.includes('process-master')) return 'process-master';
     if (pathname?.includes('user-management') || pathname?.includes('users')) return 'user-management';
     if (pathname?.includes('production-board')) return 'production-board';
