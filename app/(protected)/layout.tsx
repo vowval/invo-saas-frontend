@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Layout } from 'antd';
+import { Layout, Spin } from 'antd';
 import Navigation from '@/components/Navigation';
 
 type JwtPayload = {
@@ -12,7 +12,7 @@ type JwtPayload = {
 function decodeJwt(token: string): JwtPayload | null {
   try {
     const base64Payload = token.split('.')[1];
-    const payload = Buffer.from(base64Payload, 'base64').toString('utf-8');
+    const payload = atob(base64Payload);
     return JSON.parse(payload);
   } catch {
     return null;
@@ -30,7 +30,6 @@ export default function ProtectedLayout({
   useEffect(() => {
     const token = localStorage.getItem('token');
 
-    // 🔒 Not logged in → login
     if (!token) {
       router.push('/login');
       return;
@@ -48,7 +47,15 @@ export default function ProtectedLayout({
   }, [router]);
 
   if (loading) {
-    return null;
+    return (
+      <Layout style={{ minHeight: '100vh' }}>
+        <Layout.Sider width={256} style={{ minHeight: '100vh', background: '#fff' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <Spin />
+          </div>
+        </Layout.Sider>
+      </Layout>
+    );
   }
 
   return (

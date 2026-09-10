@@ -56,17 +56,14 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!localStorage.getItem('token')) {
-      router.push('/login');
-      return;
-    }
-    Promise.all([apiFetch('/dyeing-jobs'), apiFetch('/invoices')])
+    Promise.all([apiFetch("/dyeing-jobs"), apiFetch("/invoices")])
       .then(([jobsData, invoicesData]) => {
         setJobs(jobsData);
         setInvoices(invoicesData);
       })
-      .catch(() => setError('Failed to load dashboard data'));
-  }, [router]);
+      .catch(() => setError("Failed to load dashboard data"));
+  }, []);
+
 
   const activeJobs = jobs.filter(job => job.status !== 'DELIVERED').length;
   const readyJobs = jobs.filter(job => job.status === 'READY_FOR_DELIVERY').length;
