@@ -28,6 +28,14 @@ type Recipe = {
 
 type IngredientRow = { chemicalItemId: string; dosageGPerKg: string };
 
+type RequirementPreview = {
+  chemicalItemId: string;
+  name: string;
+  unit: string;
+  requiredQty: number;
+  currentStock: number;
+};
+
 export default function RecipesPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [chemicals, setChemicals] = useState<Chemical[]>([]);
@@ -46,7 +54,7 @@ export default function RecipesPage() {
 
   const [previewRecipeId, setPreviewRecipeId] = useState('');
   const [previewInputQty, setPreviewInputQty] = useState('');
-  const [preview, setPreview] = useState<any[] | null>(null);
+  const [preview, setPreview] = useState<RequirementPreview[] | null>(null);
 
   async function loadData() {
     try {
@@ -296,7 +304,7 @@ export default function RecipesPage() {
                 </tr>
               </thead>
               <tbody>
-                {preview.map((row: any) => (
+                {preview.map(row => (
                   <tr key={row.chemicalItemId}>
                     <td className="border p-2">{row.name}</td>
                     <td className="border p-2 text-center">{row.requiredQty} {row.unit}</td>

@@ -15,6 +15,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import type { TooltipValueType } from 'recharts';
 
 type Job = {
   id: string;
@@ -31,6 +32,8 @@ type Invoice = {
   invoiceNo: string;
   buyerName: string;
   totalAmount: number | string;
+  invoiceDate?: string;
+  createdAt?: string;
 };
 
 const formatNumber = (value: number | string, maximumFractionDigits = 3) =>
@@ -90,8 +93,10 @@ export default function DashboardPage() {
 
   const invoiceTrend = useMemo(() => {
     const byMonth: Record<string, number> = {};
-    invoices.forEach((invoice: any) => {
-      const d = new Date(invoice.invoiceDate || invoice.createdAt || Date.now());
+    invoices.forEach(invoice => {
+      const invoiceDate = invoice.invoiceDate ?? invoice.createdAt;
+      if (!invoiceDate) return;
+      const d = new Date(invoiceDate);
       const key = d.toLocaleString('en-US', { month: 'short' });
       byMonth[key] = (byMonth[key] || 0) + Number(invoice.totalAmount);
     });
@@ -140,7 +145,7 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} width={60} />
-                <Tooltip formatter={(value: any) => formatCurrency(Number(value))} />
+                <Tooltip formatter={(value: TooltipValueType | undefined) => formatCurrency(Number(Array.isArray(value) ? value[0] : value ?? 0))} />
                 <Bar dataKey="total" fill="#6366f1" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

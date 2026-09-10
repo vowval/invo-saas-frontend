@@ -16,6 +16,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import type { TooltipValueType } from 'recharts';
 
 type CustomerSummary = {
   customerName: string;
@@ -160,7 +161,7 @@ export default function CustomersPage() {
                     width={110}
                     tick={{ fontSize: 11 }}
                   />
-                  <Tooltip formatter={(value: any) => inr(Number(value))} />
+                  <Tooltip formatter={(value: TooltipValueType | undefined) => inr(Number(Array.isArray(value) ? value[0] : value ?? 0))} />
                   <Bar dataKey="outstanding" fill="#dc2626" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -188,7 +189,7 @@ export default function CustomersPage() {
                     ))}
                   </Pie>
                   <Legend />
-                  <Tooltip formatter={(value: any) => inr(Number(value))} />
+                  <Tooltip formatter={(value: TooltipValueType | undefined) => inr(Number(Array.isArray(value) ? value[0] : value ?? 0))} />
                 </PieChart>
               </ResponsiveContainer>
             </div>

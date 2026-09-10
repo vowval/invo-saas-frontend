@@ -29,6 +29,14 @@ type DyeingJob = { id: string; jobNo: string; customerName: string };
 
 type Recipe = { id: string; code: string };
 
+type RequirementPreview = {
+  chemicalItemId: string;
+  name: string;
+  unit: string;
+  requiredQty: number;
+  currentStock: number;
+};
+
 const statusColors: Record<MachineStatus, string> = {
   IDLE: 'bg-slate-100 text-slate-600',
   RUNNING: 'bg-emerald-100 text-emerald-700',
@@ -64,7 +72,7 @@ export default function MachinesPage() {
     recipeId: '',
     inputQty: '',
   });
-  const [requirementPreview, setRequirementPreview] = useState<any[] | null>(null);
+  const [requirementPreview, setRequirementPreview] = useState<RequirementPreview[] | null>(null);
 
   async function loadBoard() {
     try {
@@ -267,7 +275,7 @@ export default function MachinesPage() {
               <div className="rounded-lg bg-slate-50 p-3 text-xs">
                 <p className="mb-1 font-medium text-slate-600">Chemicals required for this batch:</p>
                 <ul className="space-y-0.5">
-                  {requirementPreview.map((row: any) => (
+                  {requirementPreview.map(row => (
                     <li key={row.chemicalItemId} className={row.currentStock < row.requiredQty ? 'text-red-600' : 'text-slate-600'}>
                       {row.name}: {row.requiredQty} {row.unit} (stock: {row.currentStock} {row.unit})
                     </li>

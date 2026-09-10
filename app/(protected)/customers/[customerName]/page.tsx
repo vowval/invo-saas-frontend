@@ -14,6 +14,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import type { TooltipValueType } from 'recharts';
 
 type Ledger = {
   customerName: string;
@@ -119,7 +120,7 @@ export default function CustomerLedgerPage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={value => inr(value)} tick={{ fontSize: 11 }} width={70} />
-                  <Tooltip formatter={(value: any) => inr(Number(value))} />
+                  <Tooltip formatter={(value: TooltipValueType | undefined) => inr(Number(Array.isArray(value) ? value[0] : value ?? 0))} />
                   <Legend />
                   <Bar dataKey="invoiced" fill="#6366f1" radius={[6, 6, 0, 0]} name="Invoiced" />
                   <Line type="monotone" dataKey="received" stroke="#059669" strokeWidth={2} name="Received" />

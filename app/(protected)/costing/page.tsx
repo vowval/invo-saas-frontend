@@ -13,6 +13,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import type { TooltipValueType } from 'recharts';
 
 type Batch = {
   id: string;
@@ -135,7 +136,7 @@ export default function CostingPage() {
     setSuccess('');
     setSaving(true);
     try {
-      const payload: Record<string, any> = { notes: form.notes };
+      const payload: Record<string, string | number> = { notes: form.notes };
       for (const { key } of COST_FIELDS) {
         // Leave dyeChemicalCost blank to keep the auto-computed inventory value.
         if (key === 'dyeChemicalCost' && form[key] === '') continue;
@@ -281,7 +282,7 @@ export default function CostingPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(value: any) => Number(value).toFixed(2)} />
+                  <Tooltip formatter={(value: TooltipValueType | undefined) => Number(Array.isArray(value) ? value[0] : value ?? 0).toFixed(2)} />
                   <Legend />
                   <Bar dataKey="Cost/kg" fill="#f97316" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="Rate/kg" fill="#6366f1" radius={[4, 4, 0, 0]} />
