@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import {
   Layout,
@@ -10,8 +12,8 @@ import {
   Tabs,
 } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { useParams, useNavigate } from 'react-router-dom';
-import ParameterEditor from '../components/process-master/ParameterEditor';
+import { useRouter, useParams } from 'next/navigation';
+import ParameterEditor from '@/components/process-master/ParameterEditor';
 
 interface Process {
   id: string;
@@ -27,17 +29,18 @@ interface Process {
 /**
  * Process Parameters Page
  * 
- * Route: /factory-admin/process-master/:processId/parameters
+ * Route: /factory-admin/process-master/[processId]/parameters
  * 
  * Allows factory admins to:
  * - View global parameters (inherited from super-admin)
  * - Create factory-specific parameter overrides
  * - Manage their custom parameters
  */
-export const ProcessParametersPage: React.FC = () => {
-  const { processId } = useParams<{ processId: string }>();
-  const navigate = useNavigate();
-  
+export default function ProcessParametersPage() {
+  const router = useRouter();
+  const params = useParams();
+  const processId = params.processId as string;
+
   const [process, setProcess] = useState<Process | null>(null);
   const [loading, setLoading] = useState(false);
   const [isCustomProcess, setIsCustomProcess] = useState(false);
@@ -64,7 +67,7 @@ export const ProcessParametersPage: React.FC = () => {
 
       // Mock data for now
       setProcess({
-        id: processId!,
+        id: processId,
         name: 'Normal Wash',
         process_code: 'WASH-NORM',
         description: 'Standard washing process',
@@ -103,7 +106,7 @@ export const ProcessParametersPage: React.FC = () => {
 
       <Button
         icon={<ArrowLeftOutlined />}
-        onClick={() => navigate('/factory-admin/process-master')}
+        onClick={() => router.push('/factory-admin/process-master')}
         style={{ marginBottom: '16px' }}
       >
         Back to Process Master
@@ -142,7 +145,7 @@ export const ProcessParametersPage: React.FC = () => {
             label: 'Global Parameters',
             children: (
               <ParameterEditor
-                processId={processId!}
+                processId={processId}
                 processName={`${process.name} (Global)`}
                 isGlobal={true}
               />
@@ -155,7 +158,7 @@ export const ProcessParametersPage: React.FC = () => {
                   label: 'Custom Parameters',
                   children: (
                     <ParameterEditor
-                      processId={processId!}
+                      processId={processId}
                       processName={`${process.name} (Custom)`}
                       isGlobal={false}
                     />
@@ -167,6 +170,4 @@ export const ProcessParametersPage: React.FC = () => {
       />
     </Layout.Content>
   );
-};
-
-export default ProcessParametersPage;
+}
