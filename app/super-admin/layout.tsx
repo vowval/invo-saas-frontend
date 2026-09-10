@@ -12,7 +12,7 @@ type JwtPayload = {
 function decodeJwt(token: string): JwtPayload | null {
   try {
     const base64Payload = token.split('.')[1];
-    const payload = Buffer.from(base64Payload, 'base64').toString('utf-8');
+    const payload = atob(base64Payload);
     return JSON.parse(payload);
   } catch {
     return null;
