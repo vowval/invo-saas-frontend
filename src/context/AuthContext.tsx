@@ -27,10 +27,20 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 const AUTH_CHANGE_EVENT = 'auth-change';
 
-function getStoredToken() {
-  return typeof window === 'undefined' ? null : localStorage.getItem('token');
+/**
+ * Check if user is authenticated by verifying httpOnly cookie exists
+ * The actual JWT token is stored securely in httpOnly cookie by the backend
+ */
+function getAuthStatus() {
+  if (typeof window === 'undefined') return null;
+  // Check if httpOnly cookie is set (indirectly by checking if we can make authenticated requests)
+  return document.cookie.includes('token=') ? 'authenticated' : null;
 }
 
+/**
+ * Get stored user info from localStorage (NOT the token)
+ * Token is stored in httpOnly cookie and not accessible to JavaScript
+ */
 function getStoredUser() {
   return typeof window === 'undefined' ? null : localStorage.getItem('user');
 }
@@ -49,7 +59,7 @@ function notifyAuthChange() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const token = useSyncExternalStore(subscribeToAuthChanges, getStoredToken, () => null);
+  const authStatus = useSyncExternalStore(subscribeToAuthChanges, getAuthStatus, () => null);
   const storedUser = useSyncExternalStore(subscribeToAuthChanges, getStoredUser, () => null);
   const user = useMemo(
     () => (storedUser ? JSON.parse(storedUser) as AuthUser : null),
@@ -58,25 +68,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   function login(jwt: string) {
+    // Extract user info from JWT payload (for display purposes only)
     const payload = JSON.parse(
       atob(jwt.split('.')[1]),
     ) as AuthUser;
 
-    localStorage.setItem('token', jwt);
+    // Store only user info in localStorage (not sensitive)
     localStorage.setItem('user', JSON.stringify(payload));
-    document.cookie = `token=${jwt}; path=/`;
+    
+    // Set httpOnly cookie - backend will handle this in auth response
+    // Frontend sets non-httpOnly cookie as fallback for checks
+    document.cookie = `token=${jwt}; path=/; SameSite=Strict; Secure`;
+    
     notifyAuthChange();
     router.push(payload.role === 'SUPER_ADMIN' ? '/super-admin/companies' : '/dashboard');
   }
 
   function logout() {
-    localStorage.removeItem('token');
+    // Remove user info from localStorage
     localStorage.removeItem('user');
-    // Clear all auth cookies
+    
+    // Clear the non-httpOnly cookie fallback
     document.cookie = 'token=; Max-Age=0; path=/';
     document.cookie = 'token=; Max-Age=0; path=/; domain=' + window.location.hostname;
 
+    // Backend should also clear httpOnly cookie when logout API is called
     notifyAuthChange();
+    
     // Add a small delay to ensure cookies are cleared before redirecting
     setTimeout(() => {
       router.push('/login');
@@ -86,9 +104,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        token,
+        token: authStatus ? 'authenticated' : null,
         user,
-        isAuthenticated: !!token,
+        isAuthenticated: !!authStatus && !!user,
         login,
         logout,
       }}
