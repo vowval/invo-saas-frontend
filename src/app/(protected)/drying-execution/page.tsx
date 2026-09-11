@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, InputNumber, Select, Button, Steps, Space, message } from 'antd';
 import { CheckCircleOutlined, ClockCircleOutlined, PauseCircleOutlined } from '@ant-design/icons';
+import { apiFetch } from '@/lib/api';
 
 type DryingProcessType = 'HYDRO_EXTRACTION' | 'TUMBLE_DRY' | 'NATURAL_DRY';
 type DryingBatchStatus = 'PENDING' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED' | 'ON_HOLD' | 'REJECTED';
@@ -39,12 +40,8 @@ const DryingExecutionPage: React.FC = () => {
   const handleCreateBatch = async (values: any) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/drying-execution/create-batch', {
+      const batch = await apiFetch('/api/drying-execution/create-batch', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
         body: JSON.stringify({
           ...values,
           uom: values.uom || 'kg',
@@ -53,14 +50,9 @@ const DryingExecutionPage: React.FC = () => {
         }),
       });
 
-      if (response.ok) {
-        const batch = await response.json();
-        setSelectedBatch(batch);
-        message.success('Drying batch created successfully');
-        setCurrentStep(2);
-      } else {
-        message.error('Failed to create batch');
-      }
+      setSelectedBatch(batch);
+      message.success('Drying batch created successfully');
+      setCurrentStep(2);
     } catch (error) {
       message.error('Failed to create batch');
     } finally {
@@ -73,20 +65,13 @@ const DryingExecutionPage: React.FC = () => {
     if (!selectedBatch) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/drying-execution/${selectedBatch.id}/start`, {
+      const batch = await apiFetch(`/api/drying-execution/${selectedBatch.id}/start`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
       });
 
-      if (response.ok) {
-        const batch = await response.json();
-        setSelectedBatch(batch);
-        message.success('Batch started');
-        setCurrentStep(3);
-      }
+      setSelectedBatch(batch);
+      message.success('Batch started');
+      setCurrentStep(3);
     } catch (error) {
       message.error('Failed to start batch');
     } finally {
@@ -99,26 +84,19 @@ const DryingExecutionPage: React.FC = () => {
     if (!selectedBatch) return;
     setLoading(true);
     try {
-      const response = await fetch(
+      const batch = await apiFetch(
         `/api/drying-execution/${selectedBatch.id}/record-parameters`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
           body: JSON.stringify({
             actualParameters: values.actualParameters || {},
           }),
         },
       );
 
-      if (response.ok) {
-        const batch = await response.json();
-        setSelectedBatch(batch);
-        message.success('Parameters recorded');
-        setCurrentStep(4);
-      }
+      setSelectedBatch(batch);
+      message.success('Parameters recorded');
+      setCurrentStep(4);
     } catch (error) {
       message.error('Failed to record parameters');
     } finally {
@@ -131,12 +109,8 @@ const DryingExecutionPage: React.FC = () => {
     if (!selectedBatch) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/drying-execution/${selectedBatch.id}/complete`, {
+      const batch = await apiFetch(`/api/drying-execution/${selectedBatch.id}/complete`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
         body: JSON.stringify({
           outputQuantity: values.outputQuantity,
           qualityNotes: values.qualityNotes,
@@ -144,12 +118,9 @@ const DryingExecutionPage: React.FC = () => {
         }),
       });
 
-      if (response.ok) {
-        const batch = await response.json();
-        setSelectedBatch(batch);
-        message.success('Batch completed successfully');
-        setCurrentStep(5);
-      }
+      setSelectedBatch(batch);
+      message.success('Batch completed successfully');
+      setCurrentStep(5);
     } catch (error) {
       message.error('Failed to complete batch');
     } finally {
@@ -162,20 +133,13 @@ const DryingExecutionPage: React.FC = () => {
     if (!selectedBatch) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/drying-execution/${selectedBatch.id}/pause`, {
+      const batch = await apiFetch(`/api/drying-execution/${selectedBatch.id}/pause`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
         body: JSON.stringify({ reason: 'Operator paused batch' }),
       });
 
-      if (response.ok) {
-        const batch = await response.json();
-        setSelectedBatch(batch);
-        message.success('Batch paused');
-      }
+      setSelectedBatch(batch);
+      message.success('Batch paused');
     } catch (error) {
       message.error('Failed to pause batch');
     } finally {

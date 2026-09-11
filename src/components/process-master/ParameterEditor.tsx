@@ -25,6 +25,7 @@ import {
   EyeOutlined,
   SaveOutlined,
 } from '@ant-design/icons';
+import { apiFetch } from '@/lib/api';
 
 /**
  * Parameter Data Types
@@ -126,15 +127,10 @@ export const ParameterEditor: React.FC<ParameterEditorProps> = ({
   const loadParameters = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
+      const data = await apiFetch(
         `/api/admin/process-master/parameters/process/${processId}`
       );
-      if (response.ok) {
-        const data = await response.json();
-        setParameters(data);
-      } else {
-        message.error('Failed to load parameters');
-      }
+      setParameters(data);
     } catch (error) {
       console.error('Error loading parameters:', error);
       message.error('Error loading parameters');
@@ -181,38 +177,28 @@ export const ParameterEditor: React.FC<ParameterEditorProps> = ({
 
       if (editingParameter) {
         // Update
-        const response = await fetch(
+        await apiFetch(
           `/api/admin/process-master/parameters/${editingParameter.id}`,
           {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           }
         );
 
-        if (response.ok) {
-          message.success('Parameter updated');
-          loadParameters();
-        } else {
-          message.error('Failed to update parameter');
-        }
+        message.success('Parameter updated');
+        loadParameters();
       } else {
         // Create
-        const response = await fetch('/api/admin/process-master/parameters', {
+        await apiFetch('/api/admin/process-master/parameters', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             process_id: processId,
             ...payload,
           }),
         });
 
-        if (response.ok) {
-          message.success('Parameter created');
-          loadParameters();
-        } else {
-          message.error('Failed to create parameter');
-        }
+        message.success('Parameter created');
+        loadParameters();
       }
 
       setModalVisible(false);
@@ -232,17 +218,13 @@ export const ParameterEditor: React.FC<ParameterEditorProps> = ({
     }
 
     try {
-      const response = await fetch(
+      await apiFetch(
         `/api/admin/process-master/parameters/${id}`,
         { method: 'DELETE' }
       );
 
-      if (response.ok) {
-        message.success('Parameter deleted');
-        loadParameters();
-      } else {
-        message.error('Failed to delete parameter');
-      }
+      message.success('Parameter deleted');
+      loadParameters();
     } catch (error) {
       console.error('Error deleting parameter:', error);
       message.error('Error deleting parameter');
@@ -259,21 +241,16 @@ export const ParameterEditor: React.FC<ParameterEditorProps> = ({
     }));
 
     try {
-      const response = await fetch(
+      await apiFetch(
         '/api/admin/process-master/parameters/reorder',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ parameters: reorderPayload }),
         }
       );
 
-      if (response.ok) {
-        setParameters(reorderedParams);
-        message.success('Parameters reordered');
-      } else {
-        message.error('Failed to reorder parameters');
-      }
+      setParameters(reorderedParams);
+      message.success('Parameters reordered');
     } catch (error) {
       console.error('Error reordering:', error);
       message.error('Error reordering parameters');

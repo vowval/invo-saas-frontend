@@ -31,6 +31,7 @@ interface CategoryListProps {
   onCategoryUpdated: (category: ProcessCategory) => void;
   onCategoryDeleted: (categoryId: string) => void;
   onToast: (type: 'success' | 'error' | 'info', message: string) => void;
+  readOnly?: boolean;
 }
 
 export default function CategoryList({
@@ -38,6 +39,7 @@ export default function CategoryList({
   onCategoryUpdated,
   onCategoryDeleted,
   onToast,
+  readOnly = false,
 }: CategoryListProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(categories.map((c) => c.id)),
@@ -87,15 +89,17 @@ export default function CategoryList({
                 {category.is_active ? 'Active' : 'Inactive'}
               </span>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingCategory(category);
-                }}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                Edit
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingCategory(category);
+                  }}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  Edit
+                </button>
+              )}
             </div>
           </div>
 
@@ -113,23 +117,27 @@ export default function CategoryList({
                 {category.processes.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500 text-sm mb-3">No processes in this category</p>
-                    <button
-                      onClick={() => setShowCreateProcessModal(category.id)}
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                    >
-                      + Add Process
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="mb-4">
+                    {!readOnly && (
                       <button
                         onClick={() => setShowCreateProcessModal(category.id)}
                         className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                       >
                         + Add Process
                       </button>
-                    </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {!readOnly && (
+                      <div className="mb-4">
+                        <button
+                          onClick={() => setShowCreateProcessModal(category.id)}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          + Add Process
+                        </button>
+                      </div>
+                    )}
 
                     <ProcessList
                       processes={category.processes}
@@ -144,6 +152,7 @@ export default function CategoryList({
                         onCategoryUpdated(updatedCategory);
                       }}
                       onToast={onToast}
+                      readOnly={readOnly}
                     />
                   </>
                 )}

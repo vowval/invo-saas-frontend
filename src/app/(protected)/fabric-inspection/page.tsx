@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Table, Modal, Select, Row, Col, Tag, Divider, Empty, Spin, message } from 'antd';
 import { PlusOutlined, CheckOutlined, CloseOutlined, PauseOutlined } from '@ant-design/icons';
+import { apiFetch } from '@/lib/api';
 
 interface FabricReceipt {
   id: string;
@@ -184,9 +185,8 @@ export default function FabricInspectionPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/fabric-receiving/inspection/${selectedReceipt}`, {
+      const inspection = await apiFetch(`/api/fabric-receiving/inspection/${selectedReceipt}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           inspectorName: values.inspectorName,
           inspectionDateTime: new Date().toISOString(),
@@ -205,16 +205,11 @@ export default function FabricInspectionPage() {
         }),
       });
 
-      if (response.ok) {
-        const inspection = await response.json();
-        setInspections([inspection, ...inspections]);
-        setShowInspectionModal(false);
-        form.resetFields();
-        setCurrentCheckpoints([]);
-        message.success('Inspection created successfully');
-      } else {
-        message.error('Failed to create inspection');
-      }
+      setInspections([inspection, ...inspections]);
+      setShowInspectionModal(false);
+      form.resetFields();
+      setCurrentCheckpoints([]);
+      message.success('Inspection created successfully');
     } catch (error) {
       console.error('Error:', error);
       message.error('Error creating inspection');
@@ -226,19 +221,13 @@ export default function FabricInspectionPage() {
   const handleSubmitResult = async (inspectionId: string, result: string) => {
     setSubmittingResult(result);
     try {
-      const response = await fetch(`/api/fabric-receiving/inspection/${inspectionId}/submit-result`, {
+      const updated = await apiFetch(`/api/fabric-receiving/inspection/${inspectionId}/submit-result`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ result }),
       });
 
-      if (response.ok) {
-        const updated = await response.json();
-        setInspections(inspections.map((i) => (i.id === inspectionId ? updated : i)));
-        message.success(`Inspection result: ${result}`);
-      } else {
-        message.error('Failed to submit result');
-      }
+      setInspections(inspections.map((i) => (i.id === inspectionId ? updated : i)));
+      message.success(`Inspection result: ${result}`);
     } catch (error) {
       console.error('Error:', error);
       message.error('Error submitting result');

@@ -14,7 +14,7 @@ export default function FactoryProcessMasterPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ProcessMasterUI />
+      <ProcessMasterUI readOnly />
     </div>
   );
 }

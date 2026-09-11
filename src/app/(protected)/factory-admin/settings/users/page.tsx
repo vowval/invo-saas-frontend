@@ -25,6 +25,7 @@ import {
   LockOutlined,
   MailOutlined,
 } from '@ant-design/icons';
+import { apiFetch } from '@/lib/api';
 
 interface User {
   id: string;
@@ -58,43 +59,16 @@ export default function UserManagementPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        message.error('No authentication token found');
-        return;
-      }
-
-      // Decode token to get company ID
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      const payload = JSON.parse(jsonPayload);
-      const companyId = payload.companyId;
-
-      if (!companyId) {
-        message.error('No company ID found in token');
-        return;
-      }
-
-      // Fetch company info
-      const companyRes = await fetch(`/api/companies/${companyId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!companyRes.ok) throw new Error('Failed to fetch company');
-      const companyData = await companyRes.json();
+      // Fetch the caller's own company profile. The backend scopes this to
+      // req.user.companyId server-side, so a factory admin can never fetch
+      // another tenant's company data (multi-tenant isolation).
+      const companyData = await apiFetch('/company/profile');
       setCompany(companyData);
 
-      // Fetch users for this company
-      const usersRes = await fetch(`/api/users/company/${companyId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!usersRes.ok) throw new Error('Failed to fetch users');
-      const usersData = await usersRes.json();
+      // Fetch users for the caller's own company. The backend resolves the
+      // company from the authenticated user's token rather than trusting a
+      // client-supplied ID.
+      const usersData = await apiFetch('/api/users');
       setUsers(usersData);
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -124,21 +98,7 @@ export default function UserManagementPage() {
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        message.error('No authentication token found');
-        return;
-      }
-
-      const res = await fetch(`/api/users/${userId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Failed to delete user');
-      }
+      await apiFetch(`/api/users/${userId}`, { method: 'DELETE' });
 
       message.success('User deleted successfully');
       await loadData();
@@ -153,65 +113,34 @@ export default function UserManagementPage() {
       const values = await form.validateFields();
       setSubmitting(true);
 
-      const token = localStorage.getItem('token');
-      if (!token) {
-        message.error('No authentication token found');
+      if (!company?.id) {
+        message.error('Company information not loaded yet');
         return;
       }
 
-      // Decode token to get company ID
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      const payload = JSON.parse(jsonPayload);
-      const companyId = payload.companyId;
-
       if (isEditMode && editingUserId) {
         // Update user
-        const res = await fetch(`/api/users/${editingUserId}`, {
+        await apiFetch(`/api/users/${editingUserId}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
           body: JSON.stringify({
             name: values.name,
             role: values.role,
           }),
         });
 
-        if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.message || 'Failed to update user');
-        }
-
         message.success('User updated successfully');
       } else {
         // Create user
-        const res = await fetch('/api/users', {
+        await apiFetch('/api/users', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
           body: JSON.stringify({
             name: values.name,
             email: values.email,
             password: values.password,
             role: values.role,
-            companyId,
+            companyId: company.id,
           }),
         });
-
-        if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.message || 'Failed to create user');
-        }
 
         message.success('User created successfully');
       }

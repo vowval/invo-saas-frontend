@@ -20,6 +20,7 @@ interface ProcessListProps {
   categoryId: string;
   onProcessUpdated: (process: Process) => void;
   onToast: (type: 'success' | 'error' | 'info', message: string) => void;
+  readOnly?: boolean;
 }
 
 export default function ProcessList({
@@ -27,6 +28,7 @@ export default function ProcessList({
   categoryId,
   onProcessUpdated,
   onToast,
+  readOnly = false,
 }: ProcessListProps) {
   const [editingProcess, setEditingProcess] = useState<Process | null>(null);
   const [duplicatingProcess, setDuplicatingProcess] = useState<string | null>(null);
@@ -114,29 +116,33 @@ export default function ProcessList({
                 </span>
 
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => setEditingProcess(process)}
-                    className="text-blue-600 hover:text-blue-700 text-xs font-medium px-2 py-1"
-                  >
-                    Edit
-                  </button>
+                  {!readOnly && (
+                    <>
+                      <button
+                        onClick={() => setEditingProcess(process)}
+                        className="text-blue-600 hover:text-blue-700 text-xs font-medium px-2 py-1"
+                      >
+                        Edit
+                      </button>
 
-                  <button
-                    onClick={() => setDuplicatingProcess(process.id)}
-                    className="text-blue-600 hover:text-blue-700 text-xs font-medium px-2 py-1"
-                  >
-                    Duplicate
-                  </button>
+                      <button
+                        onClick={() => setDuplicatingProcess(process.id)}
+                        className="text-blue-600 hover:text-blue-700 text-xs font-medium px-2 py-1"
+                      >
+                        Duplicate
+                      </button>
 
-                  <button
-                    onClick={() => handleToggleActive(process)}
-                    className="text-xs font-medium px-2 py-1"
-                    style={{
-                      color: process.is_active ? '#dc2626' : '#16a34a',
-                    }}
-                  >
-                    {process.is_active ? 'Deactivate' : 'Activate'}
-                  </button>
+                      <button
+                        onClick={() => handleToggleActive(process)}
+                        className="text-xs font-medium px-2 py-1"
+                        style={{
+                          color: process.is_active ? '#dc2626' : '#16a34a',
+                        }}
+                      >
+                        {process.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

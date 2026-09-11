@@ -30,6 +30,7 @@ import {
   PlayCircleOutlined,
   ArrowRightOutlined,
 } from '@ant-design/icons';
+import { apiFetch } from '@/lib/api';
 
 interface Process {
   id: string;
@@ -108,11 +109,8 @@ export default function ProcessRouteBuilderPage() {
 
   const fetchProcesses = async () => {
     try {
-      const response = await fetch('/api/admin/process-master/processes');
-      if (response.ok) {
-        const data = await response.json();
-        setProcesses(data);
-      }
+      const data = await apiFetch('/api/admin/process-master/processes');
+      setProcesses(data);
     } catch (error) {
       console.error('Error fetching processes:', error);
     }
@@ -121,11 +119,8 @@ export default function ProcessRouteBuilderPage() {
   const fetchRoute = async (id: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/process-route/job/${id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setRoute(data);
-      }
+      const data = await apiFetch(`/api/process-route/job/${id}`);
+      setRoute(data);
     } catch (error) {
       console.error('Error fetching route:', error);
       message.error('Failed to load route');
@@ -143,9 +138,8 @@ export default function ProcessRouteBuilderPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/process-route/job/${jobId}`, {
+      const newRoute = await apiFetch(`/api/process-route/job/${jobId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           routeName: values.routeName,
           templateName: values.templateName,
@@ -153,15 +147,10 @@ export default function ProcessRouteBuilderPage() {
         }),
       });
 
-      if (response.ok) {
-        const newRoute = await response.json();
-        setRoute(newRoute);
-        setShowCreateRoute(false);
-        form.resetFields();
-        message.success('Route created');
-      } else {
-        message.error('Failed to create route');
-      }
+      setRoute(newRoute);
+      setShowCreateRoute(false);
+      form.resetFields();
+      message.success('Route created');
     } catch (error) {
       console.error('Error:', error);
       message.error('Error creating route');
@@ -181,23 +170,18 @@ export default function ProcessRouteBuilderPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/process-route/${route.id}/steps`, {
+      await apiFetch(`/api/process-route/${route.id}/steps`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...values,
           sequence: parseInt(values.sequence),
         }),
       });
 
-      if (response.ok) {
-        await fetchRoute(route.job.id);
-        setShowAddStep(false);
-        stepForm.resetFields();
-        message.success('Step added');
-      } else {
-        message.error('Failed to add step');
-      }
+      await fetchRoute(route.job.id);
+      setShowAddStep(false);
+      stepForm.resetFields();
+      message.success('Step added');
     } catch (error) {
       console.error('Error:', error);
       message.error('Error adding step');
@@ -211,16 +195,12 @@ export default function ProcessRouteBuilderPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/process-route/steps/${stepId}`, {
+      await apiFetch(`/api/process-route/steps/${stepId}`, {
         method: 'DELETE',
       });
 
-      if (response.ok) {
-        await fetchRoute(route.job.id);
-        message.success('Step removed');
-      } else {
-        message.error('Failed to remove step');
-      }
+      await fetchRoute(route.job.id);
+      message.success('Step removed');
     } catch (error) {
       console.error('Error:', error);
       message.error('Error removing step');
@@ -234,17 +214,12 @@ export default function ProcessRouteBuilderPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/process-route/${route.id}/lock`, {
+      const updated = await apiFetch(`/api/process-route/${route.id}/lock`, {
         method: 'PUT',
       });
 
-      if (response.ok) {
-        const updated = await response.json();
-        setRoute(updated);
-        message.success('Route locked and ready for production');
-      } else {
-        message.error('Failed to lock route');
-      }
+      setRoute(updated);
+      message.success('Route locked and ready for production');
     } catch (error) {
       console.error('Error:', error);
       message.error('Error locking route');
@@ -258,16 +233,12 @@ export default function ProcessRouteBuilderPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/process-route/steps/${stepId}/start`, {
+      await apiFetch(`/api/process-route/steps/${stepId}/start`, {
         method: 'POST',
       });
 
-      if (response.ok) {
-        await fetchRoute(route.job.id);
-        message.success('Step started');
-      } else {
-        message.error('Failed to start step');
-      }
+      await fetchRoute(route.job.id);
+      message.success('Step started');
     } catch (error) {
       console.error('Error:', error);
       message.error('Error starting step');
@@ -281,18 +252,13 @@ export default function ProcessRouteBuilderPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/process-route/steps/${stepId}/complete`, {
+      await apiFetch(`/api/process-route/steps/${stepId}/complete`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ actualQuantity: quantity }),
       });
 
-      if (response.ok) {
-        await fetchRoute(route.job.id);
-        message.success('Step completed');
-      } else {
-        message.error('Failed to complete step');
-      }
+      await fetchRoute(route.job.id);
+      message.success('Step completed');
     } catch (error) {
       console.error('Error:', error);
       message.error('Error completing step');

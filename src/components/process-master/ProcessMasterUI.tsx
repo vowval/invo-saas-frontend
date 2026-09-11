@@ -29,7 +29,7 @@ interface Process {
 
 type ToastType = 'success' | 'error' | 'info';
 
-export default function ProcessMasterUI() {
+export default function ProcessMasterUI({ readOnly = false }: { readOnly?: boolean }) {
   const [categories, setCategories] = useState<ProcessCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +93,11 @@ export default function ProcessMasterUI() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Process Master</h1>
-        <p className="text-gray-600">Manage process categories and definitions for your factory</p>
+        <p className="text-gray-600">
+          {readOnly
+            ? 'Browse the global process categories and processes available to your factory'
+            : 'Manage process categories and definitions for your factory'}
+        </p>
       </div>
 
       {/* Error message */}
@@ -111,12 +115,14 @@ export default function ProcessMasterUI() {
 
       {/* Action buttons */}
       <div className="mb-6 flex gap-3">
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-        >
-          + Add Category
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            + Add Category
+          </button>
+        )}
         <button
           onClick={fetchCategories}
           className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium transition-colors"
@@ -129,12 +135,14 @@ export default function ProcessMasterUI() {
       {categories.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
           <p className="text-gray-600 mb-4">No process categories found</p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="text-blue-600 hover:text-blue-700 font-medium"
-          >
-            Create the first category
-          </button>
+          {!readOnly && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Create the first category
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
@@ -143,12 +151,13 @@ export default function ProcessMasterUI() {
             onCategoryUpdated={handleCategoryUpdated}
             onCategoryDeleted={handleCategoryDeleted}
             onToast={showToast}
+            readOnly={readOnly}
           />
         </div>
       )}
 
       {/* Create category modal */}
-      {showCreateModal && (
+      {!readOnly && showCreateModal && (
         <CreateCategoryModal
           onCreated={handleCategoryCreated}
           onClose={() => setShowCreateModal(false)}
