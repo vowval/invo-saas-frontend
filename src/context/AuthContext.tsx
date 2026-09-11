@@ -7,6 +7,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiFetch } from '@/lib/api';
 
 type AuthUser = {
   userId: string;
@@ -73,26 +74,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       atob(jwt.split('.')[1]),
     ) as AuthUser;
 
-    // Store only user info in localStorage (not sensitive)
+    // Store JWT token in localStorage for Authorization header in API requests
+    localStorage.setItem('token', jwt);
+    
+    // Store user info in localStorage (not sensitive)
     localStorage.setItem('user', JSON.stringify(payload));
     
-    // Set httpOnly cookie - backend will handle this in auth response
-    // Frontend sets non-httpOnly cookie as fallback for checks
+    // Also set non-httpOnly cookie as fallback for auth status checks
     document.cookie = `token=${jwt}; path=/; SameSite=Strict; Secure`;
     
     notifyAuthChange();
     router.push(payload.role === 'SUPER_ADMIN' ? '/super-admin/companies' : '/dashboard');
   }
 
-  function logout() {
+  async function logout() {
+    try {
+      // Call backend logout endpoint to clear httpOnly cookie
+      await apiFetch('/auth/logout', { method: 'POST' });
+    } catch (error) {
+      // Continue with logout even if API call fails
+      console.warn('Logout API call failed:', error);
+    }
+
     // Remove user info from localStorage
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     
     // Clear the non-httpOnly cookie fallback
     document.cookie = 'token=; Max-Age=0; path=/';
     document.cookie = 'token=; Max-Age=0; path=/; domain=' + window.location.hostname;
 
-    // Backend should also clear httpOnly cookie when logout API is called
     notifyAuthChange();
     
     // Add a small delay to ensure cookies are cleared before redirecting

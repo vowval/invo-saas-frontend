@@ -11,6 +11,7 @@ export async function apiFetch(
     `${process.env.NEXT_PUBLIC_API_URL}${url}`,
     {
       ...options,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
