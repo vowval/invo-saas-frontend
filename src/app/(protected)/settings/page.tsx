@@ -14,6 +14,7 @@ type Profile = {
   accountNo?: string;
   ifsc?: string;
   allowServiceArchive?: boolean;
+  hideDashboardForStaff?: boolean;
   invoicePrefix?: string;
 };
 
@@ -207,6 +208,40 @@ export default function SettingsPage() {
           className="mt-4 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-60"
         >
           {saving ? 'Saving...' : 'Save removal setting'}
+        </button>
+      </section>
+      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+        <h2 className="font-semibold text-slate-900">Staff access</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
+          Staff accounts see the same workflow menu as Factory Admin (excluding User Management).
+          Use this if you want staff to focus on assigned work instead of the overall dashboard.
+        </p>
+        <label className="mt-4 flex items-start gap-3 text-sm text-slate-900">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-slate-700"
+            checked={profile.hideDashboardForStaff === true}
+            onChange={event =>
+              setProfile(current => ({
+                ...current,
+                hideDashboardForStaff: event.target.checked,
+              }))
+            }
+          />
+          <span>
+            Hide the Dashboard link for Staff users
+            <span className="block text-xs text-slate-600">
+              Factory Admin will still see the Dashboard as usual.
+            </span>
+          </span>
+        </label>
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          className="mt-4 rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+        >
+          {saving ? 'Saving...' : 'Save staff access setting'}
         </button>
       </section>
       <section className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6 shadow-sm">

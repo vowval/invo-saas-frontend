@@ -54,8 +54,8 @@ export default function QualityControlPage() {
     try {
       const [batchList, inspectionList, statsData] = await Promise.all([
         apiFetch('/production/batches'),
-        apiFetch('/quality-control'),
-        apiFetch('/quality-control/stats'),
+        apiFetch('/api/quality-control'),
+        apiFetch('/api/quality-control/stats'),
       ]);
       setBatches(batchList);
       setInspections(inspectionList);
@@ -79,7 +79,7 @@ export default function QualityControlPage() {
       return;
     }
     try {
-      await apiFetch(`/quality-control/batches/${form.batchId}`, {
+      await apiFetch(`/api/quality-control/batches/${form.batchId}`, {
         method: 'POST',
         body: JSON.stringify({
           ...form,
@@ -109,7 +109,7 @@ export default function QualityControlPage() {
   async function reprocess(batchId: string) {
     setError('');
     try {
-      await apiFetch(`/quality-control/batches/${batchId}/reprocess`, { method: 'POST' });
+      await apiFetch(`/api/quality-control/batches/${batchId}/reprocess`, { method: 'POST' });
       await loadData();
     } catch {
       setError('Failed to create reprocess batch (batch may not be QC-failed, or already reprocessed)');

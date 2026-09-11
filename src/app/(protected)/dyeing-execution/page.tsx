@@ -99,7 +99,7 @@ export default function DyeingExecutionPage() {
 
   async function loadRecipes() {
     try {
-      const data = await apiFetch('/recipes'); // Assuming recipes endpoint exists
+      const data = await apiFetch('/inventory/recipes');
       setRecipes(data);
     } catch {
       console.log('Recipes not available');

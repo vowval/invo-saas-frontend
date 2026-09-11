@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { apiFetch } from '@/lib/api';
 import {
   Layout,
   Menu,
@@ -54,6 +55,7 @@ export default function Navigation() {
   const [userName, setUserName] = useState('User');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [openMenuKeys, setOpenMenuKeys] = useState<string[]>([]);
+  const [hideDashboardForStaff, setHideDashboardForStaff] = useState(false);
 
   useEffect(() => {
     // Decode JWT from localStorage
@@ -63,8 +65,17 @@ export default function Navigation() {
         const base64Payload = token.split('.')[1];
         const payload = atob(base64Payload);
         const decoded: DecodedToken = JSON.parse(payload);
-        setRole(decoded.role as UserRole || 'STAFF');
+        const resolvedRole = (decoded.role as UserRole) || 'STAFF';
+        setRole(resolvedRole);
         setUserName(localStorage.getItem('userName') || 'User');
+
+        if (resolvedRole === 'STAFF') {
+          apiFetch('/company/profile')
+            .then((profile: { hideDashboardForStaff?: boolean }) => {
+              setHideDashboardForStaff(profile?.hideDashboardForStaff === true);
+            })
+            .catch(() => setHideDashboardForStaff(false));
+        }
       } catch (error) {
         console.error('Failed to decode token:', error);
         setRole('STAFF');
@@ -93,11 +104,15 @@ export default function Navigation() {
       icon: <UserOutlined />,
       label: 'Profile',
     },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: <Link href="/factory-admin/settings">Settings</Link>,
-    },
+    ...(role === 'STAFF'
+      ? []
+      : [
+          {
+            key: 'settings',
+            icon: <SettingOutlined />,
+            label: <Link href="/factory-admin/settings">Settings</Link>,
+          },
+        ]),
     {
       type: 'divider' as const,
     },
@@ -282,35 +297,21 @@ export default function Navigation() {
   // ==========================================
   // STAFF MENU
   // ==========================================
-  const staffMenu = [
-    {
-      key: 'main',
-      label: 'Main',
-      children: [
-        {
-          key: 'dashboard',
-          icon: <DashboardOutlined />,
-          label: <Link href="/dashboard">Dashboard</Link>,
-        },
-      ],
-    },
-    {
-      key: 'work',
-      label: 'Work',
-      children: [
-        {
-          key: 'dyeing-jobs',
-          icon: <ShoppingCartOutlined />,
-          label: <Link href="/dyeing-jobs">Assigned Jobs</Link>,
-        },
-        {
-          key: 'quality-control',
-          icon: <SafetyOutlined />,
-          label: <Link href="/quality-control">Quality Control</Link>,
-        },
-      ],
-    },
-  ];
+  // STAFF gets the exact same workflow/navigation as ADMIN (they do all the
+  // operational work), except the entire Settings section (User Management +
+  // Factory Settings) which is ADMIN-only.
+  // Factory Admin can additionally choose to hide the Dashboard link for
+  // Staff via the "hideDashboardForStaff" company setting.
+  const staffMenu = factoryAdminMenu
+    .filter((section) => section.key !== 'settings')
+    .map((section) => ({
+      ...section,
+      children: section.children?.filter((item) => {
+        if (item.key === 'dashboard' && hideDashboardForStaff) return false;
+        return true;
+      }),
+    }))
+    .filter((section) => (section.children?.length ?? 0) > 0);
 
   // Determine which menu to show based on role
   let menuItems = [];
