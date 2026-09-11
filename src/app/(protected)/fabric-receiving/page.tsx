@@ -344,7 +344,17 @@ export default function FabricReceivingPage() {
         </Card>
 
         {/* Lots and Rolls Section */}
-        <Card title="Fabric Lots and Rolls" style={{ marginBottom: '20px' }}>
+        <Card 
+          title="Fabric Lots and Rolls" 
+          style={{ marginBottom: '20px' }}
+          extra={
+            lots.length > 0 && Math.abs(totalNetWeight - (form.getFieldValue('netWeight') || 0)) > 0.1 ? (
+              <span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+                ⚠️ Weight Mismatch: Rolls ({totalNetWeight.toFixed(3)} kg) ≠ Net Weight ({(form.getFieldValue('netWeight') || 0).toFixed(3)} kg)
+              </span>
+            ) : null
+          }
+        >
           <div style={{ marginBottom: '20px' }}>
             <h4>Current Rolls (for new lot)</h4>
             <Table
@@ -405,7 +415,7 @@ export default function FabricReceivingPage() {
         </Card>
 
         {/* Summary Section */}
-        <Card style={{ backgroundColor: '#f0f2f5', marginBottom: '20px' }}>
+        <Card style={{ backgroundColor: Math.abs(totalNetWeight - (form.getFieldValue('netWeight') || 0)) > 0.1 ? '#fff7e6' : '#f0f2f5', marginBottom: '20px', border: Math.abs(totalNetWeight - (form.getFieldValue('netWeight') || 0)) > 0.1 ? '2px solid #ff7a45' : 'none' }}>
           <Row gutter={16}>
             <Col xs={24} sm={6}>
               <div><strong>Number of Lots:</strong> {lots.length}</div>
@@ -414,17 +424,30 @@ export default function FabricReceivingPage() {
               <div><strong>Total Rolls:</strong> {lots.reduce((sum, l) => sum + l.rolls.length, 0)}</div>
             </Col>
             <Col xs={24} sm={6}>
-              <div><strong>Total Weight:</strong> {totalNetWeight.toFixed(3)} kg</div>
+              <div><strong>Total Roll Weight:</strong> <span style={{ fontWeight: 'bold', color: Math.abs(totalNetWeight - (form.getFieldValue('netWeight') || 0)) > 0.1 ? '#ff4d4f' : '#000' }}>{totalNetWeight.toFixed(3)} kg</span></div>
             </Col>
             <Col xs={24} sm={6}>
-              <div><strong>Status:</strong> <span style={{ color: '#1890ff' }}>Ready to Submit</span></div>
+              <div><strong>Net Weight (Form):</strong> <span style={{ fontWeight: 'bold', color: Math.abs(totalNetWeight - (form.getFieldValue('netWeight') || 0)) > 0.1 ? '#ff4d4f' : '#000' }}>{(form.getFieldValue('netWeight') || 0).toFixed(3)} kg</span></div>
             </Col>
           </Row>
+          {lots.length > 0 && Math.abs(totalNetWeight - (form.getFieldValue('netWeight') || 0)) > 0.1 && (
+            <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff1f0', border: '1px solid #ffccc7', borderRadius: '4px', color: '#ff4d4f' }}>
+              <strong>⚠️ Weight Mismatch!</strong> The sum of all roll weights ({totalNetWeight.toFixed(3)} kg) must match the Net Weight ({(form.getFieldValue('netWeight') || 0).toFixed(3)} kg). 
+              Difference: {Math.abs(totalNetWeight - (form.getFieldValue('netWeight') || 0)).toFixed(3)} kg
+            </div>
+          )}
         </Card>
 
         {/* Submit Button */}
         <div style={{ textAlign: 'right' }}>
-          <Button type="primary" htmlType="submit" size="large" loading={loading} disabled={lots.length === 0}>
+          <Button 
+            type="primary" 
+            htmlType="submit" 
+            size="large" 
+            loading={loading} 
+            disabled={lots.length === 0 || Math.abs(totalNetWeight - (form.getFieldValue('netWeight') || 0)) > 0.1}
+            title={Math.abs(totalNetWeight - (form.getFieldValue('netWeight') || 0)) > 0.1 ? 'Roll weights must match Net Weight' : ''}
+          >
             {loading ? 'Creating Receipt...' : 'Create Fabric Receipt & Job'}
           </Button>
         </div>
