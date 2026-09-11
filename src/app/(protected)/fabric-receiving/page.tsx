@@ -47,10 +47,6 @@ export default function FabricReceivingPage() {
 
   // Add a new roll to current lot
   const handleAddRoll = () => {
-    if (!currentLot) {
-      message.error('Please create a lot first');
-      return;
-    }
     setModalVisible(true);
   };
 
